@@ -32,7 +32,6 @@
 (provide is-reminder?)
 (provide make-picts)
 (provide generate-qrs)
-(provide ts-magic-loader-img)
 
 (provide codify)
 (provide text-with-image)
@@ -46,11 +45,8 @@
 
 (set-margin! 0)
 
-(define ts-magic-loader-image
-  (bitmap "images/tsMagicLoader.png"))
-
 (define GALLIUM_ICON
- (scale (bitmap "images/galliumos.jpg") 0.2))
+ (scale (bitmap "galliumos.jpg") 0.2))
 
 (define INSTRUCTOR_TERM "Game Master")
 
@@ -274,8 +270,8 @@
 
 (define (path-item a b)
   (let* ([is-file (string-contains? a ".")]
-         [folder-bullet (scale-to-fit (bitmap "images/folder-icon.png") 20 20)]
-         [file-bullet (scale-to-fit (bitmap "images/file-icon.png") 20 20)]
+         [folder-bullet (scale-to-fit (bitmap "folder-icon.png") 20 20)]
+         [file-bullet (scale-to-fit (bitmap "file-icon.png") 20 20)]
          [bullet (if is-file file-bullet folder-bullet)])
     (item  #:bullet bullet
            #:width 50
@@ -297,7 +293,7 @@
 (define (display-video-qr a)
   (let* ([maybe-tag a]
          [icon (if (tagged-link? maybe-tag)
-                   (scale-to-fit (bitmap (~a "images/" (++ (tagged-link-tag maybe-tag) "-icon.png"))) 20 20)
+                   (scale-to-fit (bitmap (++ (tagged-link-tag maybe-tag) "-icon.png")) 20 20)
                    (blank 0))]
          [url (cond [(tagged-link? maybe-tag) (tagged-link-url maybe-tag)]
                     [else maybe-tag])])
@@ -419,7 +415,7 @@
         (label
          (para #:width 200 (++ "You can earn $s for this " times "x")))
         (label-with-arrows (hc-append (cc-superimpose
-                                       (scale-to-fit (bitmap "images/repeat-icon.png") 100 100)
+                                       (scale-to-fit (bitmap "repeat-icon.png") 100 100)
                                        (t times))
                                       label))]
     (vc-append 20
@@ -449,7 +445,7 @@
   (foldl (lambda (_ n) (f i n)) (blank 0) (range times)  ))
 
 (define (award-amount->pict amount)
-  (let ([icon (scale (bitmap "images/coin.png") 0.5)])
+  (let ([icon (scale (bitmap "coin.png") 0.5)])
    (vc-append (colorize
                (t (string-append (if (> 0 amount) "-" "") "$" (number->string (abs amount))))
                (cond [(= 0 amount ) "gray"]

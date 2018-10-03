@@ -46,7 +46,7 @@
 
 (set-margin! 0)
 
-(define ts-magic-loader-image
+(define ts-magic-loader-img
   (bitmap "images/tsMagicLoader.png"))
 
 (define GALLIUM_ICON

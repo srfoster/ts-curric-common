@@ -46,10 +46,8 @@
 (provide scan-lightsaber-texture)
 
 
-;bg-blue.png		bg-green.png		bg-purple.png
-;bg-brown.png		bg-pink.png		bg-turquoise.png
-(define (bg color)
-  (scale-to-fit (bitmap (++ "images/bg-" color ".png")) (* 1.79 600) (* 1.79 400)))
+(define (bg i)
+  (scale-to-fit (bitmap i) (* 1.79 600) (* 1.79 400)))
 
 ;3p0-avatar.png		darth-vader-avatar.png	obiwan-avatar.png
 ;r2-d2-avatar.png	yoda-avatar.png

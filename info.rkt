@@ -1,3 +1,4 @@
 #lang info
 
-(define deps '())
+(define deps '(
+               "https://github.com/thoughtstem/magic-loader.git"))

@@ -41,16 +41,23 @@
 (require pict/shadow)
 (require slideshow/text)
 (require pict/color)
+(require racket/runtime-path)
 
 (current-font-size 40) 
 
 (set-margin! 0)
 
+(define-runtime-path images "images")
+(define-runtime-path qrs "qrs")
+
+(define (local-bitmap s)
+  (bitmap (~a images "/" s)))
+
 (define ts-magic-loader-img
-  (bitmap "images/tsMagicLoader.png"))
+  (local-bitmap "tsMagicLoader.png"))
 
 (define GALLIUM_ICON
- (scale (bitmap "images/galliumos.jpg") 0.2))
+ (scale (local-bitmap "galliumos.jpg") 0.2))
 
 (define INSTRUCTOR_TERM "Game Master")
 
@@ -59,6 +66,7 @@
 (define (pathify-url url)
   (++ (string-replace (string-replace url ":" "_" #:all? true) "/" "_" #:all? true)
       ".png"))
+
 
 
 (struct settings (bg avatar avatar-choice avatar-reminder))
@@ -238,7 +246,7 @@
         [else (t "ERROR: Unknown activity")]))
 
 (define (url-without-dashes? s)
-  (displayln s)
+  #;(displayln s)
   (and (string? s)
        (or (= 0 (string-length s))
            (and 
@@ -248,11 +256,14 @@
 (define/contract (write-out-qr s)
   (-> url-without-dashes? void)
 
+  #;(displayln (pathify-url s))
   (qr-write s
-                  (pathify-url s)
+                  (~a (path->string qrs) "/" (pathify-url s))
                   ))
 
 (define (_generate-qr a f)
+  
+  #;(displayln "We generatin a qr..")
   (let* ([maybe-tagged-url (f a)]
          [url (cond [(string? maybe-tagged-url) maybe-tagged-url]
                     [(tagged-link? maybe-tagged-url) (tagged-link-url maybe-tagged-url)]
@@ -274,8 +285,8 @@
 
 (define (path-item a b)
   (let* ([is-file (string-contains? a ".")]
-         [folder-bullet (scale-to-fit (bitmap "images/folder-icon.png") 20 20)]
-         [file-bullet (scale-to-fit (bitmap "images/file-icon.png") 20 20)]
+         [folder-bullet (scale-to-fit (local-bitmap "folder-icon.png") 20 20)]
+         [file-bullet (scale-to-fit (local-bitmap "file-icon.png") 20 20)]
          [bullet (if is-file file-bullet folder-bullet)])
     (item  #:bullet bullet
            #:width 50
@@ -295,9 +306,10 @@
 
 
 (define (display-video-qr a)
+  #;(displayln "display-video-qr")
   (let* ([maybe-tag a]
          [icon (if (tagged-link? maybe-tag)
-                   (scale-to-fit (bitmap (~a "images/" (++ (tagged-link-tag maybe-tag) "-icon.png"))) 20 20)
+                   (scale-to-fit (local-bitmap (++ (tagged-link-tag maybe-tag) "-icon.png")) 20 20)
                    (blank 0))]
          [url (cond [(tagged-link? maybe-tag) (tagged-link-url maybe-tag)]
                     [else maybe-tag])])
@@ -336,12 +348,16 @@
 
 
 (define (qr-or-image p)
+  #;(displayln "qr-or-image")
+  
   (cond [(pict? p) (pad p 20 cc-superimpose)]
         [(= 0 (string-length p)) (blank 0)]
         [(not (string-contains? p "http")) (pad (bitmap p) 20 cc-superimpose)]
         [else (qr-or-path p)]))
 
 (define (qr-or-path a)
+  #;(displayln "qr-or-path")
+  
   (let ([url (if (tagged-link? a) (tagged-link-url a) a)])
     (if (eq? url "")
         (blank 0)
@@ -350,8 +366,20 @@
             (path->pict url)))))
 
 (define (url->qr url)
+  #;(displayln "url->qr")
+
+  (define img-path
+    (~a (path->string qrs) "/" (pathify-url url)))
+
+  (and (not (file-exists? img-path))
+       (write-out-qr url)
+       )
+
+  (define qr-img
+    (bitmap img-path))
+  
   (cb-superimpose
-       (scale-to-fit (bitmap (pathify-url url)) 250 250)
+       (scale-to-fit qr-img 250 250)
        (colorize (scale (hc-append (t "Scan with ") (string->open-pict "Learn")) 0.5) "gray")))
 
 
@@ -367,6 +395,7 @@
                   "black"))))
 
 (define (activity-instructions->pict a)
+    
   (vc-append 5
              (activity-header a)
              (hc-append
@@ -419,7 +448,7 @@
         (label
          (para #:width 200 (++ "You can earn $s for this " times "x")))
         (label-with-arrows (hc-append (cc-superimpose
-                                       (scale-to-fit (bitmap "images/repeat-icon.png") 100 100)
+                                       (scale-to-fit (local-bitmap "repeat-icon.png") 100 100)
                                        (t times))
                                       label))]
     (vc-append 20
@@ -449,7 +478,7 @@
   (foldl (lambda (_ n) (f i n)) (blank 0) (range times)  ))
 
 (define (award-amount->pict amount)
-  (let ([icon (scale (bitmap "images/coin.png") 0.5)])
+  (let ([icon (scale (local-bitmap "coin.png") 0.5)])
    (vc-append (colorize
                (t (string-append (if (> 0 amount) "-" "") "$" (number->string (abs amount))))
                (cond [(= 0 amount ) "gray"]
@@ -478,6 +507,7 @@
 
 
 (define (wrapper->pict sequence settings wrapper)
+
   (let ([middle-ground (activity->pict (with-award-activity wrapper))]
         [foreground (make-award-overlay (with-award-award wrapper) (settings-bg settings))]
         [background (make-bg sequence settings wrapper)])
@@ -523,6 +553,8 @@
        color)))))
 
 (define (make-picts color quest seq settings)
+  
+  
   (let* ([picts (flatten
                  (map (curry wrapper-or-choice->pict seq settings)
                       (flatten seq)))])

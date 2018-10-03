@@ -1,0 +1,1 @@
+("7.0" ("0e120bc91c3adffff98f4e3fe5215b5e7bb7bb5e" . "4dfa2426e6b18dc66a3eabd38d2c1aea8a447c63") (collects #"errortrace" #"errortrace-key.rkt") (collects #"racket" #"runtime-config.rkt") (collects #"simple-qr" #"main.rkt") (collects #"slideshow" #"main.rkt") (collects #"ts-curric-common" #"half-sheets.rkt"))

@@ -1,0 +1,1 @@
+("7.0" ("1677a683fcb940debcf0c4dd16eb96feda95051e" . "897af9d65c254595e3909240059a0e9a66ec978c") (collects #"racket" #"main.rkt") (collects #"racket" #"runtime-config.rkt") (collects #"ts-curric-common" #"fleet-winter-2017.rkt") (collects #"ts-curric-common" #"half-sheets.rkt"))

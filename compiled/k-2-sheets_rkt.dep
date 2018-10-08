@@ -1,0 +1,1 @@
+("7.0" ("1f5368d79be7780dd131307833cd40b1354c9487" . "6e0f430d2da7a30da32d5cbf1e0f254514223892") (collects #"2htdp" #"image.rkt") (collects #"lang" #"posn.rkt") (collects #"racket" #"runtime-config.rkt") (collects #"rosette" #"lang" #"reader.rkt") (collects #"rosette" #"main.rkt"))

@@ -1,0 +1,22 @@
+#lang racket
+
+(require 2htdp/image)
+
+(struct card (question answers correct-answer))
+
+(define (answer->image a)
+  (text (~a (number->letter (first a))
+            ": "
+            (second a))
+        24
+        'gray))
+
+(define (render c)
+  (overlay
+   (above/align "left"
+                (text (card-question c) 24 'black)
+                (apply (curry above/align "left")
+                       (map answer->image (card-answers c))))
+   (rectangle 400 300 'solid 'white)))
+ 
+card1

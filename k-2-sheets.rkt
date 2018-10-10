@@ -8,7 +8,7 @@
          titled-image
          auto-layout )
 
-(require 2htdp/image)
+(require (except-in 2htdp/image frame))
 (require lang/posn)
 (require ts-racket)
 

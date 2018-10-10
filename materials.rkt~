@@ -1,0 +1,6 @@
+#lang racket
+
+;Printing hints.  Or image differentiation...  Meta-data for materials...
+
+(struct material (content type))
+

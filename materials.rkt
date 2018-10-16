@@ -9,11 +9,13 @@
          default-duplication-policy
          material:student
 
-         duplication-system)
+         duplication-system
+
+         save-out-materials)
 
 (require ts-racket)
-(require (only-in pict pict?)
-         (only-in 2htdp/image image?))
+(require (prefix-in p: pict)
+         (except-in 2htdp/image frame))
 
 ;Printing hints.  Or image differentiation...  Meta-data for materials...
 
@@ -55,21 +57,20 @@
       (define num-students (if (number? num-or-course)
                                num-or-course
                                (length (students num-or-course))))
-      (flatten
-       (map (duplicate-material num-students reusable-ratio disposable-ratio raw-image-ratio)
-           quest)))))
+      (map (duplicate-material num-students reusable-ratio disposable-ratio raw-image-ratio)
+           quest))))
 
 (define (duplicate-material num-students reusable-ratio disposable-ratio raw-image-ratio)
   (λ(mat)
       (define ratio
-        (cond [((or/c image? pict?)  mat) raw-image-ratio]
+        (cond [((or/c image? p:pict?)  mat) raw-image-ratio]
               [(reusable?   mat) reusable-ratio]
               [(disposable? mat) disposable-ratio]
               [else (begin
                       (displayln mat)
                       (error "What is this?"))]))
       (duplicate
-       (* num-students ratio)
+       (ceiling (* num-students ratio))
        mat)))
 
 (define (duplicate n x)
@@ -82,6 +83,37 @@
    #:disposable (material:student 1 1)
    #:raw-image  (material:student 1 1)))
 
+
+(define (->thumb i-or-m)
+  (define i (if (material? i-or-m)
+                (material-content i-or-m)
+                i-or-m))
+  (scale-to-fit
+   (any->image i)
+   100))
+
+(define (summarize materials duplicated-materials)
+  (map list
+       (map ->thumb materials)
+       (map length duplicated-materials)))
+
+(define (render-summary-line pair)
+  (frame #:size 10
+   (beside (text (~a "x" (second pair))
+                 20
+                 'black)
+           (first pair))))
+
+(define (render-summary summary)
+  (above/align "left"
+   (text "Duplication Summary" 24 'black)
+   (apply (curry above/align "left")
+          (map render-summary-line summary))))
+
+
+(define (make-summary-sheet materials duplicated-materials)
+  (render-summary
+   (summarize materials duplicated-materials)))
 
 (define-syntax-rule (duplication-system print-quest quests-expr policy)
   (begin
@@ -96,7 +128,44 @@
 
       (define q (quest-f))
       
-      ((policy q) course-or-num))))
+      (define ret ((policy q) course-or-num))
+
+      (define summary-sheet (make-summary-sheet q ret))
+      
+      (append (flatten ret)
+              (list summary-sheet))
+      )))
 
 
+;PRINTING
+
+(require (only-in racket/gui get-directory))
+
+(define (save-out-materials prefix materials)
+  (save-all (get-directory)
+            prefix
+            (map (λ(m)
+                   (if (material? m)
+                       (material-content m)
+                       m))
+                 materials)))
+
+
+
+(define (save-all folder prefix is)
+  
+  (for ([n (range (length is))])
+    (define i (list-ref is n))
+    (define name (build-path folder (~a prefix "-" n ".png")))
+    (define save (if (image? i)
+                     (curryr save-image name)
+                     (curryr save-pict name 'png)))
+    (save i))
+
+  (system (~a "open " (path->string folder))))
+
+ 
+(define (save-pict the-pict name kind)
+  (define bm (p:pict->bitmap the-pict))
+  (send bm save-file name kind))
 

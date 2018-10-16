@@ -1,1 +1,0 @@
-("7.0" ("fdc01dcae995685977549f20428f86832d58a4cb" . "ad19d2a98ce5021ca7f0f4b8638c2aa598ddfe60") (collects #"pict" #"color.rkt") (collects #"pict" #"shadow.rkt") (collects #"racket" #"runtime-config.rkt") (collects #"simple-qr" #"main.rkt") (collects #"slideshow" #"main.rkt") (collects #"ts-curric-common" #"half-sheets.rkt"))

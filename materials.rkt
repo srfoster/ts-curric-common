@@ -15,7 +15,7 @@
 
 (require ts-racket)
 (require (prefix-in p: pict)
-         (except-in 2htdp/image frame))
+         2htdp/image)
 
 ;Printing hints.  Or image differentiation...  Meta-data for materials...
 
@@ -98,7 +98,7 @@
        (map length duplicated-materials)))
 
 (define (render-summary-line pair)
-  (frame #:size 10
+  (frame 
    (beside (text (~a "x" (second pair))
                  20
                  'black)

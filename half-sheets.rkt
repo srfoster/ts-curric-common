@@ -36,7 +36,6 @@
 
 (provide codify)
 (provide text-with-image)
-(provide launcher)
 
 (require simple-qr)
 (require pict/shadow)
@@ -90,22 +89,6 @@
 (define (download-qr url)
   (tagged-link "download" url))
 
-(define (launcher module-name image-name)
-  (define i
-    (scale
-     (code (launch
-            #,(colorize (text (string-replace module-name "ts-curric-" "")) "darkgreen")
-            #,(colorize (text image-name) "darkgreen")))
-     2))
-  
-  (tagged-link "image"
-               (frame
-                (cc-superimpose
-                 (colorize
-                  (filled-rectangle (+ 10 (pict-width i))
-                                   (+ 10 (pict-height i))  )
-                  "white")
-                 i))))
 
 
 

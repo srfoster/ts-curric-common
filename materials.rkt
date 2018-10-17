@@ -18,10 +18,15 @@
          student-display
          define-image-file
          (struct-out defined-image)
-         define-quests)
+         define-quests
+
+         launcher-img
+         ;launcher-img-defined-image
+         )
 
 (require ts-racket)
 (require (prefix-in p: pict)
+         (prefix-in p: pict/code)
          2htdp/image)
 
 ;Printing hints.  Or image differentiation...  Meta-data for materials...
@@ -181,6 +186,31 @@
       (save-image thing (~a name ".png"))
       (save-pict  thing (~a name ".png") 'png))
   (void))
+
+
+
+(define (launcher-img thing)
+  (cond [(defined-image? thing) (launcher-img-defined-image thing)]))
+
+
+(define (launcher-img-defined-image thing)
+  (define module-name (defined-image-package-name thing))
+  (define image-name (defined-image-id           thing))
+  
+  (define i
+    (p:scale
+     (p:code (launch
+              #,(p:colorize (p:text (string-replace module-name "ts-curric-" "")) "darkgreen")
+              #,(p:colorize (p:text image-name) "darkgreen")))
+     2))
+
+  
+  (p:frame
+   (p:cc-superimpose
+    (p:colorize
+     (p:filled-rectangle (+ 10 (p:pict-width i))
+                         (+ 10 (p:pict-height i))  )
+     "white")                 i))  )
 
 
 

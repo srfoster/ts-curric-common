@@ -36,11 +36,13 @@
 
 (provide codify)
 (provide text-with-image)
+(provide launcher)
 
 (require simple-qr)
 (require pict/shadow)
 (require slideshow/text)
 (require pict/color)
+(require pict/code)
 (require racket/runtime-path)
 
 (current-font-size 40) 
@@ -87,6 +89,25 @@
 
 (define (download-qr url)
   (tagged-link "download" url))
+
+(define (launcher module-name image-name)
+  (define i
+    (scale
+     (code (launch
+            #,(colorize (text (string-replace module-name "ts-curric-" "")) "darkgreen")
+            #,(colorize (text image-name) "darkgreen")))
+     2))
+  
+  (tagged-link "image"
+               (frame
+                (cc-superimpose
+                 (colorize
+                  (filled-rectangle (+ 10 (pict-width i))
+                                   (+ 10 (pict-height i))  )
+                  "white")
+                 i))))
+
+
 
 (struct instruction-basic (words) #:transparent)
 (struct instruction-subtitle (words) #:transparent)
@@ -246,17 +267,18 @@
         [else (t "ERROR: Unknown activity")]))
 
 (define (url-without-dashes? s)
-  #;(displayln s)
+  (displayln s)
   (and (string? s)
        (or (= 0 (string-length s))
            (and 
-            (string-contains? s "http")
+            (is-url? s)
             (not (string-contains? s "-"))))))
 
-(define/contract (write-out-qr s)
-  (-> url-without-dashes? void)
+(define #;/contract (write-out-qr s)
+  #;(-> url-without-dashes? void)
 
-  #;(displayln (pathify-url s))
+  (displayln s) 
+  (displayln (pathify-url s))
   (qr-write s
                   (~a (path->string qrs) "/" (pathify-url s))
                   ))
@@ -347,12 +369,18 @@
    (instruction-goal->pict (find-goal-instruction a))))
 
 
+(define (is-url? s)
+  (or
+   (string-contains? s "http")
+   (string-contains? s "file")))
+
 (define (qr-or-image p)
+  #;(displayln p) 
   #;(displayln "qr-or-image")
   
   (cond [(pict? p) (pad p 20 cc-superimpose)]
         [(= 0 (string-length p)) (blank 0)]
-        [(not (string-contains? p "http")) (pad (bitmap p) 20 cc-superimpose)]
+        [(not (is-url? p)) (pad (bitmap p) 20 cc-superimpose)]
         [else (qr-or-path p)]))
 
 (define (qr-or-path a)
@@ -361,7 +389,7 @@
   (let ([url (if (tagged-link? a) (tagged-link-url a) a)])
     (if (eq? url "")
         (blank 0)
-        (if (string-contains? url "http")
+        (if (is-url? url)
             (url->qr url)
             (path->pict url)))))
 

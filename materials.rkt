@@ -11,7 +11,14 @@
 
          duplication-system
 
-         save-out-materials)
+         save-out-materials
+         save-any
+
+         launch
+         student-display
+         define-image-file
+         (struct-out defined-image)
+         define-quests)
 
 (require ts-racket)
 (require (prefix-in p: pict)
@@ -168,4 +175,73 @@
 (define (save-pict the-pict name kind)
   (define bm (p:pict->bitmap the-pict))
   (send bm save-file name kind))
+
+(define (save-any thing name kind)
+  (if (image? thing)
+      (save-image thing (~a name ".png"))
+      (save-pict  thing (~a name ".png") 'png))
+  (void))
+
+
+
+(struct defined-image (image local-path installed-path package-name dir-name file-name id))
+
+(define-syntax-rule (define-image-file name path image)
+  (begin
+    (define local-path  (build-path path (~a 'name)))
+    (save-any image local-path 'png)
+
+    (define backwards-path-elems (reverse (explode-path path)))
+    (define package-name (second backwards-path-elems))
+    (define dir-name     (first backwards-path-elems))
+
+    (provide name)
+    (define name (defined-image
+                   image
+                   (~a local-path ".png")
+                   (~a "file:///home/thoughtstem/.racket/pkgs/" package-name "/" dir-name "/" 'name ".png")
+                   (~a package-name)
+                   (~a dir-name)
+                   (~a 'name ".png") 
+                   (~a 'name)  ))))
+
+
+
+
+(define (student-display thing)
+  (cond [(image? thing) thing]
+        [(p:pict? thing)  thing]
+        [(defined-image? thing)  (defined-image-image thing)]
+        [(list? thing)  (map student-display thing)]
+        [else thing])  )
+
+(require (for-syntax racket))
+(define-syntax (launch stx)
+  (define module (syntax->datum (second (syntax-e stx))))
+  (define thing  (syntax->datum (third (syntax-e stx))))
+  (datum->syntax stx
+                 `(begin
+                    (displayln "One moment...")
+                    (require ,(string->symbol
+                               (~a "ts-curric-" module)))
+                    (student-display ,thing)))  )
+
+
+(define-syntax (define-quests stx)
+  (define qs (rest (map syntax->datum (syntax-e stx))))
+  
+  (datum->syntax stx
+   `(begin
+     (provide quests
+              (all-from-out ,@(map (λ(s) (~a s ".rkt")) qs)))
+
+     (require
+       ,@(map (λ(s) (~a s ".rkt")) qs))
+
+      
+     
+     (define (quests)
+       (list
+        ,@qs
+        )))))
 

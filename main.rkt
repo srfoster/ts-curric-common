@@ -28,7 +28,6 @@
 (define dest
   (build-path 
     (find-system-path 'pref-dir) 
-    "7.0"
     "quickscript"
     "user-scripts"
     "launch.rkt"))

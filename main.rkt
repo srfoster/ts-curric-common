@@ -34,5 +34,6 @@
 
 (define setup-successful
   (and (not (file-exists? dest))
+       (make-directory* (build-path (find-system-path 'ref-dir) "quickscript" "user-scripts"))
        (copy-file src dest)))
 

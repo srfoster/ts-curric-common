@@ -124,8 +124,13 @@
    20
    cb-superimpose))
 
-(define (text-with-image s i)
-  (hb-append (t s) i))
+(define (text-with-image . things)
+  (define (maybe-convert-string thing)
+    (if (string? thing)
+        (t thing)
+        thing))
+  
+  (apply hb-append (map maybe-convert-string things)))
 
 
 (define (string->open-pict s)

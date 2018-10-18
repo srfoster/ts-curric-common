@@ -14,3 +14,25 @@
 (require "k-2-sheet-helpers.rkt")
 (require "materials.rkt")
 (require "fleet-winter-2017.rkt")
+
+
+;We do some one-time setup by
+;  moving the launch script into the right
+;  spot...
+(require racket/runtime-path)
+(define-runtime-path qs "quickscript")
+
+(define src
+  (build-path qs "launch.rkt"))
+
+(define dest
+  (build-path 
+    (find-system-path 'pref-dir) 
+    "quickscript"
+    "user-scripts"
+    "launch.rkt"))
+
+(define setup-successful
+  (and (not (file-exists? dest))
+       (copy-file src dest)))
+

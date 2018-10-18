@@ -190,7 +190,10 @@
 
 
 (define (launcher-img thing)
-  (cond [(defined-image? thing) (launcher-img-defined-image thing)]))
+  (p:vc-append
+   (cond [(defined-image? thing) (launcher-img-defined-image thing)])
+   (p:text "Shortcut: Use Scripts > launch")
+   ))
 
 
 (define (launcher-img-defined-image thing)
@@ -249,12 +252,16 @@
 (define-syntax (launch stx)
   (define module (syntax->datum (second (syntax-e stx))))
   (define thing  (syntax->datum (third (syntax-e stx))))
-  (datum->syntax stx
-                 `(begin
-                    (displayln "One moment...")
-                    (require ,(string->symbol
-                               (~a "ts-curric-" module)))
-                    (student-display ,thing)))  )
+
+  (if (or (equal? module '___)
+          (equal? thing  '___))
+      (datum->syntax stx '(displayln "Ummm. You were supposed to fill in the blanks: ____.  Try again!"))
+      (datum->syntax stx
+                     `(begin
+                        (displayln "One moment...")
+                        (require ,(string->symbol
+                                   (~a "ts-curric-" module)))
+                        (student-display ,thing)))  ))
 
 
 (define-syntax (define-quests stx)

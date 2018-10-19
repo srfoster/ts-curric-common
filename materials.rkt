@@ -191,9 +191,8 @@
 
 (define (launcher-img thing)
   (p:vc-append
-   (cond [(defined-image? thing) (launcher-img-defined-image thing)])
-   (p:text "Shortcut: Use Scripts > launch")
-   ))
+   (p:scale (p:text "Use Scripts > launch") 2)
+   (cond [(defined-image? thing) (launcher-img-defined-image thing)])))
 
 
 (define (launcher-img-defined-image thing)

@@ -6,8 +6,7 @@
 
 (define-script launch
   #:label "launch"
-  #:output-to clipboard
-  (λ(selection #:definitions defs #:frame fr #:interactions ints #:file f)
+  (λ(selection #:output-to #f #:definitions defs #:frame fr #:interactions ints #:file f)
     (send fr ensure-rep-shown #t)
 
     (define def-text  (send defs get-text))
@@ -28,8 +27,8 @@
 
     (define to-inject
      (if (string-contains? int-text "(require ts-curric-common)")
-         (~a launch-code)
-         (~a require-code "\n  " launch-code)))
+        (~a launch-code)
+        (~a require-code "\n  " launch-code)))
 
-    (send ints insert-port
-          (open-input-string to-inject))  )  )
+    (send ints select-all)
+        ))

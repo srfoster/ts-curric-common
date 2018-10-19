@@ -33,7 +33,7 @@
     "launch.rkt"))
 
 (define setup-successful
-  (and (not (file-exists? dest))
+  (and #;(not (file-exists? dest)) ;Even if it does exist.  We want it to overwrite, so we can update the launch tool
        (make-directory* (build-path (find-system-path 'pref-dir) "quickscript" "user-scripts"))
-       (copy-file src dest)))
+       (copy-file src dest #t)))
 

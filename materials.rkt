@@ -253,20 +253,9 @@
   (define thing  (syntax->datum (third (syntax-e stx))))
 
   (define source (syntax-source stx))
-  (define unsaved? (or
-                    (string=? (~a 'unsaved-editor)
-                              (~a source))
-                    (string=? (~a '|interactions from an unsaved-editor|)
-                              (~a source))))
-
-  (define (is-circuit-playground?)
-    (define ls (and (not unsaved?)
-                    (file->string source)))
-
-    (string-contains? (~a ls) "#lang circuit-playground"))
 
   (define the-begin
-    (if (not (is-circuit-playground?))
+    (if (not (eq? 'circuit-playground module))
         'begin ;Usually this
         'racket-begin ;Hack to make circuit-playground lang work -- because it annoyingly overrides 'begin'
         ))

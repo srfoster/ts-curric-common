@@ -253,8 +253,11 @@
   (define thing  (syntax->datum (third (syntax-e stx))))
 
   (define source (syntax-source stx))
-  (define unsaved? (string=? (~a 'unsaved-editor)
-                             (~a source)))
+  (define unsaved? (or
+                    (string=? (~a 'unsaved-editor)
+                              (~a source))
+                    (string=? (~a '|interactions from an unsaved-editor|)
+                              (~a source))))
 
   (define (is-circuit-playground?)
     (define ls (and (not unsaved?)

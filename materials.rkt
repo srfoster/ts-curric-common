@@ -252,15 +252,32 @@
   (define module (syntax->datum (second (syntax-e stx))))
   (define thing  (syntax->datum (third (syntax-e stx))))
 
+  (define source (syntax-source stx))
+  (define unsaved? (string=? (~a 'unsaved-editor)
+                             (~a source)))
+
+  (define (is-circuit-playground?)
+    (define ls (and (not unsaved?)
+                    (file->string source)))
+
+    (string-contains? (~a ls) "#lang circuit-playground"))
+
+  (define the-begin
+    (if (not (is-circuit-playground?))
+        'begin ;Usually this
+        'racket-begin ;Hack to make circuit-playground lang work -- because it annoyingly overrides 'begin'
+        ))
+  
   (if (or (equal? module '___)
           (equal? thing  '___))
       (datum->syntax stx '(displayln "Ummm. You were supposed to fill in the blanks: ____.  Try again!"))
       (datum->syntax stx
-                     `(begin
+                     `(,the-begin
                         (displayln "One moment...")
                         (require ,(string->symbol
                                    (~a "ts-curric-" module)))
-                        (student-display ,thing)))  ))
+                        (student-display ,thing)
+                        ))  ))
 
 
 (define-syntax (define-quests stx)

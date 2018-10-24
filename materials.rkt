@@ -116,16 +116,48 @@
                  'black)
            (first pair))))
 
+
+;I Like the idea of this, but it's currenty breaking above/align when there
+; arent enough images. Fix before using...
 (define (render-summary summary)
+  (define l (map render-summary-line summary))
+
+  
   (above/align "left"
-   (text "Duplication Summary" 24 'black)
-   (apply (curry above/align "left")
-          (map render-summary-line summary))))
+               (text "Duplication Summary" 24 'black)
+               (apply (curry above/align "left")
+                      l))   )
 
 
 (define (make-summary-sheet materials duplicated-materials)
   (render-summary
    (summarize materials duplicated-materials)))
+
+
+(define (quest-card? c)
+  (define i (if (material? c) (material-content c) c))
+  
+  (and (p:pict? i)
+       (> 600 (p:pict-width i))))
+
+
+
+(define (handle-card c)
+  (define i (if (material? c) (material-content c) c))
+  
+  (p:frame #:line-width 2
+           (p:inset i 20)))
+
+
+(define (handle-cards materials)
+  
+  (define cards     (filter quest-card? materials))
+  (define not-cards (filter (not/c quest-card?) materials))
+
+  (append (if (empty? cards)
+              '()
+              (cards->pages (map handle-card cards)))
+          not-cards))
 
 (define-syntax-rule (duplication-system print-quest quests-expr policy)
   (begin
@@ -134,18 +166,22 @@
     (define (quests) quests-expr)
 
     (define/contract (print-quest q-number course-or-num)
-      (-> number? (or/c course? number?) (listof (or/c material? image?)))
+      (-> number? (or/c course? number?) (listof (or/c material? image? p:pict?)))
 
       (define quest-f (list-ref (quests) (sub1 q-number)))
 
-      (define q (quest-f))
+      (define q (handle-cards (quest-f)))
       
       (define ret ((policy q) course-or-num))
 
-      (define summary-sheet (make-summary-sheet q ret))
       
-      (append (flatten ret)
-              (list summary-sheet))
+
+      ;(define summary-sheet (make-summary-sheet q ret))
+      
+      ;(append (flatten ret)
+      ;        (list summary-sheet))
+
+      (flatten ret)
       )))
 
 

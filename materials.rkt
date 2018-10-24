@@ -253,9 +253,10 @@
   (define thing  (syntax->datum (third (syntax-e stx))))
 
   (define source (syntax-source stx))
+  
 
-  (define the-begin
-    (if (not (eq? 'circuit-playground module))
+  #;(define the-begin
+    (if (not (eq? 'circuit-playground module)) ;Ugh, only works if the program has been run once...
         'begin ;Usually this
         'racket-begin ;Hack to make circuit-playground lang work -- because it annoyingly overrides 'begin'
         ))
@@ -264,12 +265,13 @@
           (equal? thing  '___))
       (datum->syntax stx '(displayln "Ummm. You were supposed to fill in the blanks: ____.  Try again!"))
       (datum->syntax stx
-                     `(,the-begin
+                     `(begin ;,the-begin
                         (displayln "One moment...")
+                        (require ts-curric-common)
                         (require ,(string->symbol
                                    (~a "ts-curric-" module)))
                         (student-display ,thing)
-                        ))  ))
+                        ))))
 
 
 (define-syntax (define-quests stx)

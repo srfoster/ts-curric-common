@@ -27,9 +27,7 @@
                             "___)"))
 
     (define to-inject
-     (if (string-contains? int-text "(require ts-curric-common)")
-         (~a launch-code)
-         (~a require-code "\n  " launch-code)))
+      (~a require-code "\n  " launch-code))
 
     (send ints insert-port
           (open-input-string to-inject))  )  )

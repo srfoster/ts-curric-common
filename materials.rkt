@@ -21,6 +21,7 @@
          define-quests
 
          launcher-img
+         launcher-str
          ;launcher-img-defined-image
          )
 
@@ -230,6 +231,21 @@
    (p:scale (p:text "Use Scripts > launch") 2)
    (cond [(defined-image? thing) (launcher-img-defined-image thing)])))
 
+(define (launcher-str module-name function-name)
+  (define i
+    (p:scale
+     (p:code (launch
+              #,(p:colorize (p:text module-name) "darkgreen")
+              #,(p:colorize (p:text function-name) "darkgreen")))
+     2))
+  (p:vc-append
+   (p:scale (p:text "Use Scripts > launch") 2)
+   (p:frame
+    (p:cc-superimpose
+     (p:colorize
+      (p:filled-rectangle (+ 10 (p:pict-width i))
+                          (+ 10 (p:pict-height i))  )
+      "white")                 i))))
 
 (define (launcher-img-defined-image thing)
   (define module-name (defined-image-package-name thing))

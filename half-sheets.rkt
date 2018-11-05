@@ -1,7 +1,7 @@
 #lang slideshow
 
 (provide activity-move-resource)
-(provide activity-instructions)
+(provide (rename-out [make-activity-instructions activity-instructions]))
 (provide activity-edit-code)
 (provide activity-repeat)
 (provide with-award)
@@ -106,6 +106,9 @@
 
 
 (struct activity-instructions (title refs steps video-url) #:transparent)
+
+(define (make-activity-instructions title refs steps video-url)
+  (activity-instructions (string-titlecase title) refs steps video-url))
 
 
 (struct activity-edit-code (file-path) )

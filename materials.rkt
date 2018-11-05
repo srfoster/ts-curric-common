@@ -19,6 +19,7 @@
          define-image-file
          (struct-out defined-image)
          define-quests
+         require/provide-common
 
          launcher-img
          launcher-str
@@ -29,6 +30,8 @@
 (require (prefix-in p: pict)
          (prefix-in p: pict/code)
          2htdp/image)
+
+(require (for-syntax racket))
 
 ;Printing hints.  Or image differentiation...  Meta-data for materials...
 
@@ -299,7 +302,7 @@
         [(list? thing)  (map student-display thing)]
         [else thing])  )
 
-(require (for-syntax racket))
+
 (define-syntax (launch stx)
   (define module (syntax->datum (second (syntax-e stx))))
   (define thing  (syntax->datum (third (syntax-e stx))))
@@ -326,21 +329,26 @@
                         ))))
 
 
+(define-syntax (require/provide-common stx)
+  (datum->syntax stx
+                 `(begin
+                    (provide (all-from-out "./common.rkt"))
+                    (require "./common.rkt"))))
+
+
 (define-syntax (define-quests stx)
   (define qs (rest (map syntax->datum (syntax-e stx))))
-  
+
   (datum->syntax stx
-   `(begin
-     (provide quests
-              (all-from-out ,@(map (λ(s) (~a s ".rkt")) qs)))
+                 `(begin
+                    (provide quests
+                             (all-from-out ,@(map (λ(s) (~a s ".rkt")) qs)))
 
-     (require
-       ,@(map (λ(s) (~a s ".rkt")) qs))
+                    (require
+                      ,@(map (λ(s) (~a s ".rkt")) qs))
 
-      
-     
-     (define (quests)
-       (list
-        ,@qs
-        )))))
+                    (define (quests)
+                      (list
+                       ,@qs
+                       )))))
 

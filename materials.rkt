@@ -22,16 +22,25 @@
          require/provide-common
 
          launcher-img
-         launcher-str
+         
          ;launcher-img-defined-image
+
+         define-webpage
          )
 
-(require ts-racket)
+(require ts-racket )
+(require net/sendurl)
+
 (require (prefix-in p: pict)
          (prefix-in p: pict/code)
          2htdp/image)
 
 (require (for-syntax racket))
+
+(struct defined-image (image local-path installed-path package-name dir-name file-name id))
+
+(struct defined-webpage (url package-name id) #:transparent)
+
 
 ;Printing hints.  Or image differentiation...  Meta-data for materials...
 
@@ -229,29 +238,18 @@
 
 
 
-(define (launcher-img thing)
+(define/contract (launcher-img thing)
+  (-> (or/c defined-image?
+            defined-webpage?)
+      p:pict?)
+  
   (p:vc-append
    (p:scale (p:text "Use Scripts > launch") 2)
-   (cond [(defined-image? thing) (launcher-img-defined-image thing)])))
-
-(define (launcher-str module-name function-name)
-  (define i
-    (p:scale
-     (p:code (launch
-              #,(p:colorize (p:text module-name) "darkgreen")
-              #,(p:colorize (p:text function-name) "darkgreen")))
-     2))
-  (p:vc-append
-   (p:scale (p:text "Use Scripts > launch") 2)
-   (p:frame
-    (p:cc-superimpose
-     (p:colorize
-      (p:filled-rectangle (+ 10 (p:pict-width i))
-                          (+ 10 (p:pict-height i))  )
-      "white")                 i))))
+   (cond [(defined-image? thing)   (launcher-img-defined-image thing)]
+         [(defined-webpage? thing) (launcher-img-defined-webpage thing)])))
 
 (define (launcher-img-defined-image thing)
-  (define module-name (defined-image-package-name thing))
+  (define module-name (~a (defined-image-package-name thing)))
   (define image-name (defined-image-id           thing))
   
   (define i
@@ -270,8 +268,6 @@
      "white")                 i))  )
 
 
-
-(struct defined-image (image local-path installed-path package-name dir-name file-name id))
 
 (define-syntax-rule (define-image-file name path image)
   (begin
@@ -294,11 +290,45 @@
 
 
 
+;The "path" param here is kind of silly.  I'd like to get rid of it.
+;  Currently, it's used to track which module the webpage was defined in.
+(define-syntax-rule (define-webpage name path url)
+  (begin
+    (define backwards-path-elems (reverse (explode-path path)))
+    (define dir-name     (second backwards-path-elems))
+
+    (provide name)
+    (define name (defined-webpage
+                   url
+                   dir-name
+                   (~a 'name)))))
+
+
+(define (launcher-img-defined-webpage p)
+  (define module-name    (string-replace (~a (defined-webpage-package-name p)) "ts-curric-" "")
+    )
+  (define function-name  (defined-webpage-id p))
+  
+  (define i
+    (p:scale
+     (p:code (launch
+              #,(p:colorize (p:text module-name) "darkgreen")
+              #,(p:colorize (p:text function-name) "darkgreen")))
+     2))
+  (p:frame
+    (p:cc-superimpose
+     (p:colorize
+      (p:filled-rectangle (+ 10 (p:pict-width i))
+                          (+ 10 (p:pict-height i))  )
+      "white")                 i)))
+
+
 
 (define (student-display thing)
   (cond [(image? thing) thing]
         [(p:pict? thing)  thing]
         [(defined-image? thing)  (defined-image-image thing)]
+        [(defined-webpage? thing)  (send-url (defined-webpage-url thing))]
         [(list? thing)  (map student-display thing)]
         [else thing])  )
 
@@ -322,7 +352,8 @@
       (datum->syntax stx
                      `(begin ;,the-begin
                         (displayln "One moment...")
-                        (require ts-curric-common)
+                        (require ts-curric-common )
+                        
                         (require ,(string->symbol
                                    (~a "ts-curric-" module)))
                         (student-display ,thing)
@@ -332,8 +363,8 @@
 (define-syntax (require/provide-common stx)
   (datum->syntax stx
                  `(begin
-                    (provide (all-from-out "./common.rkt"))
-                    (require "./common.rkt"))))
+                    (provide (all-from-out "common.rkt"))
+                    (require "common.rkt"))))
 
 
 (define-syntax (define-quests stx)

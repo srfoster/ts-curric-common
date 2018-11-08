@@ -26,10 +26,13 @@
          ;launcher-img-defined-image
 
          define-webpage
+         define-racket-file
          )
 
-(require ts-racket )
+(require ts-racket)
 (require net/sendurl)
+(require framework)
+(require (only-in racket/gui editor-snip%))
 
 (require (prefix-in p: pict)
          (prefix-in p: pict/code)
@@ -40,6 +43,8 @@
 (struct defined-image (image local-path installed-path package-name dir-name file-name id))
 
 (struct defined-webpage (url package-name id) #:transparent)
+
+(struct defined-racket-file (path package-name id) #:transparent)
 
 
 ;Printing hints.  Or image differentiation...  Meta-data for materials...
@@ -240,17 +245,39 @@
 
 (define/contract (launcher-img thing)
   (-> (or/c defined-image?
-            defined-webpage?)
+            defined-webpage?
+            defined-racket-file?)
       p:pict?)
   
   (p:vc-append
    (p:scale (p:text "Use Scripts > launch") 2)
-   (cond [(defined-image? thing)   (launcher-img-defined-image thing)]
-         [(defined-webpage? thing) (launcher-img-defined-webpage thing)])))
+   (cond [(defined-image? thing)       (launcher-img-defined-image thing)]
+         [(defined-webpage? thing)     (launcher-img-defined-webpage thing)]
+         [(defined-racket-file? thing) (launcher-img-defined-racket-file thing)])))
 
 (define (launcher-img-defined-image thing)
   (define module-name (~a (defined-image-package-name thing)))
   (define image-name (defined-image-id           thing))
+  
+  (define i
+    (p:scale
+     (p:code (launch
+              #,(p:colorize (p:text (string-replace module-name "ts-curric-" "")) "darkgreen")
+              #,(p:colorize (p:text image-name) "darkgreen")))
+     2))
+
+  
+  (p:frame
+   (p:cc-superimpose
+    (p:colorize
+     (p:filled-rectangle (+ 10 (p:pict-width i))
+                         (+ 10 (p:pict-height i))  )
+     "white")                 i))  )
+
+
+(define (launcher-img-defined-racket-file thing)
+  (define module-name (~a (defined-racket-file-package-name thing)))
+  (define image-name  (~a (defined-racket-file-id           thing)))
   
   (define i
     (p:scale
@@ -287,6 +314,27 @@
                    (~a dir-name)
                    (~a 'name ".png") 
                    (~a 'name)  ))))
+
+
+(define-syntax-rule (define-racket-file name folder file-name)
+  (begin
+    (define path  (build-path folder file-name))
+
+    (if (not (file-exists? path))
+        (error (~a "File must exist in order to use define-racket-file: " file-name))
+        (void))
+
+
+
+    
+    (define backwards-path-elems (reverse (explode-path path)))
+    (define package-name (third backwards-path-elems))
+    
+    (provide name)
+    (define name (defined-racket-file
+                   path
+                   package-name
+                   'name))))
 
 
 
@@ -328,9 +376,30 @@
   (cond [(image? thing) thing]
         [(p:pict? thing)  thing]
         [(defined-image? thing)  (defined-image-image thing)]
-        [(defined-webpage? thing)  (send-url (defined-webpage-url thing))]
+        [(defined-webpage? thing)  (send-url (defined-webpage-url thing))] 
+        [(defined-racket-file? thing)  (copy-paste-editor (defined-racket-file-path thing))]
         [(list? thing)  (map student-display thing)]
         [else thing])  )
+
+
+(define (copy-paste-editor path)
+  (define my-racket:text%
+  (class racket:text%
+    (super-new)
+    
+    (define/augment (after-insert start end)
+      (displayln "Hello"))))
+  
+  (define text-editor
+    (new my-racket:text%))
+  
+  (send text-editor load-file
+        path)
+  
+  (new editor-snip% 
+       [editor text-editor]
+       [min-width 200]	 
+       [min-height 200]))
 
 
 (define-syntax (launch stx)

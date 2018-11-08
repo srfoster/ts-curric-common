@@ -490,8 +490,7 @@
                           (instruction-basic (launcher-img hello-world))
                           (instruction-basic "Move your cursor to the end and press enter.")
                           (instruction-goal "the mystery success image"))
-                         (scripts>launcher-img)
-                         ))
+                         (scripts>launcher-img)))
 
 (module+ test
   (how-to-use-launcher-card))

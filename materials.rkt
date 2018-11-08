@@ -31,8 +31,11 @@
 
          (struct-out defined-launcher-function)
          (struct-out defined-racket-file)
+
+         how-to-use-launcher-card
          )
 
+(require "./half-sheets.rkt")
 (require ts-racket)
 (require net/sendurl)
 (require framework)
@@ -292,7 +295,6 @@
   (define short-package-name
     (string->symbol
      (string-replace package-name "ts-curric-" "")))
-    
   
   (datum->syntax stx
    `(begin
@@ -305,7 +307,7 @@
       (define ,name
         (defined-launcher-function
           ',short-package-name
-          #'name
+          ',name
           ,f)))))
 
 
@@ -456,4 +458,45 @@
                       (list
                        ,@qs
                        )))))
+
+
+(require racket/runtime-path)
+(define-runtime-path images "images")
+
+(define (scripts>launcher-img)
+  (p:bitmap (build-path images "scripts-launch.png")))
+
+
+
+(define-launcher-function hello-world  
+  (lambda()
+    (p:rotate
+     (p:vl-append 10
+                  (p:scale (p:text "Success!!!") 4)
+                  (random-dude)
+                  (p:scale (p:text "Usually there would be more here:") 2)
+                  (p:scale (p:text "Sometimes code.  Sometimes a video.  Sometimes a mystery.") 2)
+                  (p:scale (p:text "But for now, it's just a weird creature.") 2)
+                  (p:scale (p:text "(HINT: For a surprise, try running the launch code again.)") 2))
+     (/ (- (random) 0.5) 2)
+     )))
+
+(define (how-to-use-launcher-card)
+  (activity-instructions "Launch Codes"
+                         '()
+                         (list                        
+                          (instruction-basic "Open the launcher")
+                          (instruction-basic "Fill in the blanks")
+                          (instruction-basic (launcher-img hello-world))
+                          (instruction-basic "Move your cursor to the end and press enter.")
+                          (instruction-goal "the mystery success image"))
+                         (scripts>launcher-img)
+                         ))
+
+(module+ test
+  (how-to-use-launcher-card))
+
+
+
+
 

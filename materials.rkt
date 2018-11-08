@@ -16,17 +16,21 @@
 
          launch
          student-display
-         define-image-file
+         
          (struct-out defined-image)
          define-quests
          require/provide-common
 
          launcher-img
          
-         ;launcher-img-defined-image
-
+         define-image-file
          define-webpage
          define-racket-file
+         define-launcher-list
+         define-launcher-function
+
+         (struct-out defined-launcher-function)
+         (struct-out defined-racket-file)
          )
 
 (require ts-racket)
@@ -40,11 +44,19 @@
 
 (require (for-syntax racket))
 
-(struct defined-image (image local-path installed-path package-name dir-name file-name id))
+(struct defined-launcher (package-name id) #:transparent)
 
-(struct defined-webpage (url package-name id) #:transparent)
+(struct defined-image defined-launcher (image))
 
-(struct defined-racket-file (path package-name id) #:transparent)
+(struct defined-webpage defined-launcher (url) #:transparent)
+
+(struct defined-racket-file defined-launcher (path) #:transparent)
+
+(struct defined-launcher-list defined-launcher (launchers) #:transparent)
+
+(struct defined-launcher-function defined-launcher (f) #:transparent)
+
+(define launchable? defined-launcher?)
 
 
 ;Printing hints.  Or image differentiation...  Meta-data for materials...
@@ -192,13 +204,6 @@
       
       (define ret ((policy q) course-or-num))
 
-      
-
-      ;(define summary-sheet (make-summary-sheet q ret))
-      
-      ;(append (flatten ret)
-      ;        (list summary-sheet))
-
       (flatten ret)
       )))
 
@@ -243,21 +248,20 @@
 
 
 
+
+
 (define/contract (launcher-img thing)
-  (-> (or/c defined-image?
-            defined-webpage?
-            defined-racket-file?)
+  (-> launchable?
       p:pict?)
-  
+
   (p:vc-append
    (p:scale (p:text "Use Scripts > launch") 2)
-   (cond [(defined-image? thing)       (launcher-img-defined-image thing)]
-         [(defined-webpage? thing)     (launcher-img-defined-webpage thing)]
-         [(defined-racket-file? thing) (launcher-img-defined-racket-file thing)])))
+   (launcher-img-defined-launcher thing)))
 
-(define (launcher-img-defined-image thing)
-  (define module-name (~a (defined-image-package-name thing)))
-  (define image-name (defined-image-id           thing))
+
+(define (launcher-img-defined-launcher thing)
+  (define module-name (~a (defined-launcher-package-name thing)))
+  (define image-name  (~a (defined-launcher-id           thing)))
   
   (define i
     (p:scale
@@ -275,24 +279,49 @@
      "white")                 i))  )
 
 
-(define (launcher-img-defined-racket-file thing)
-  (define module-name (~a (defined-racket-file-package-name thing)))
-  (define image-name  (~a (defined-racket-file-id           thing)))
-  
-  (define i
-    (p:scale
-     (p:code (launch
-              #,(p:colorize (p:text (string-replace module-name "ts-curric-" "")) "darkgreen")
-              #,(p:colorize (p:text image-name) "darkgreen")))
-     2))
+(define-syntax (define-launcher-function stx)
+  (define d (syntax->datum stx))
+  (define name (second d))
+  (define f    (third d))
 
+  (define package-name
+    (findf
+     (curryr string-prefix? "ts-curric-")
+     (map ~a (explode-path (syntax-source stx)))))
+
+  (define short-package-name
+    (string->symbol
+     (string-replace package-name "ts-curric-" "")))
+    
   
-  (p:frame
-   (p:cc-superimpose
-    (p:colorize
-     (p:filled-rectangle (+ 10 (p:pict-width i))
-                         (+ 10 (p:pict-height i))  )
-     "white")                 i))  )
+  (datum->syntax stx
+   `(begin
+
+      (if (not (procedure? ,f))
+          (error (~a "Must give a function to define-launcher-function"))
+          (void))
+    
+      (provide ,name)
+      (define ,name
+        (defined-launcher-function
+          ',short-package-name
+          #'name
+          ,f)))))
+
+
+(define-syntax-rule (define-launcher-list name ls ...)
+  (begin
+
+    #;(if (not ((listof launchable?) (list ls ...)))
+        (error (~a "All must be launchables in define-launcher-list"))
+        (void))
+    
+    (provide name)
+    (define name
+      (defined-launcher-list
+        (defined-launcher-package-name (first (list ls ...)))
+        #'name
+        (list ls ...)))))
 
 
 
@@ -307,13 +336,9 @@
 
     (provide name)
     (define name (defined-image
-                   image
-                   (~a local-path ".png")
-                   (~a "file:///home/thoughtstem/.racket/pkgs/" package-name "/" dir-name "/" 'name ".png")
                    (~a package-name)
-                   (~a dir-name)
-                   (~a 'name ".png") 
-                   (~a 'name)  ))))
+                   (~a 'name)
+                   image))))
 
 
 (define-syntax-rule (define-racket-file name folder file-name)
@@ -324,17 +349,14 @@
         (error (~a "File must exist in order to use define-racket-file: " file-name))
         (void))
 
-
-
-    
     (define backwards-path-elems (reverse (explode-path path)))
     (define package-name (third backwards-path-elems))
     
     (provide name)
     (define name (defined-racket-file
-                   path
                    package-name
-                   'name))))
+                   'name
+                   path))))
 
 
 
@@ -347,48 +369,31 @@
 
     (provide name)
     (define name (defined-webpage
-                   url
                    dir-name
-                   (~a 'name)))))
+                   (~a 'name)
+                   url))))
 
-
-(define (launcher-img-defined-webpage p)
-  (define module-name    (string-replace (~a (defined-webpage-package-name p)) "ts-curric-" "")
-    )
-  (define function-name  (defined-webpage-id p))
-  
-  (define i
-    (p:scale
-     (p:code (launch
-              #,(p:colorize (p:text module-name) "darkgreen")
-              #,(p:colorize (p:text function-name) "darkgreen")))
-     2))
-  (p:frame
-    (p:cc-superimpose
-     (p:colorize
-      (p:filled-rectangle (+ 10 (p:pict-width i))
-                          (+ 10 (p:pict-height i))  )
-      "white")                 i)))
-
-
-
+;Defines how a defined-launcher will display to a student...
 (define (student-display thing)
-  (cond [(image? thing) thing]
-        [(p:pict? thing)  thing]
-        [(defined-image? thing)  (defined-image-image thing)]
-        [(defined-webpage? thing)  (send-url (defined-webpage-url thing))] 
-        [(defined-racket-file? thing)  (copy-paste-editor (defined-racket-file-path thing))]
-        [(list? thing)  (map student-display thing)]
+  (cond [(image? thing)                  thing]
+        [(p:pict? thing)                 thing]
+        [(procedure? thing)              (thing)]
+        [(defined-image? thing)          (defined-image-image thing)]
+        [(defined-webpage? thing)        (send-url (defined-webpage-url thing))] 
+        [(defined-racket-file? thing)    (copy-paste-editor (defined-racket-file-path thing))]
+        [(defined-launcher-list? thing)  (apply values (map student-display (defined-launcher-list-launchers thing) ))]
+        [(defined-launcher-function? thing)  ((defined-launcher-function-f thing))]
+        [(list? thing)                   (map student-display thing)]
         [else thing])  )
 
 
 (define (copy-paste-editor path)
   (define my-racket:text%
-  (class racket:text%
-    (super-new)
+    (class racket:text%
+      (super-new)
     
-    (define/augment (after-insert start end)
-      (displayln "Hello"))))
+      #;(define/augment (after-insert start end)
+          (displayln "Hello"))))
   
   (define text-editor
     (new my-racket:text%))

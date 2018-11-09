@@ -322,7 +322,7 @@
     (define name
       (defined-launcher-list
         (defined-launcher-package-name (first (list ls ...)))
-        #'name
+        'name
         (list ls ...)))))
 
 

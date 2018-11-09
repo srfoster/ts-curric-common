@@ -26,7 +26,8 @@
 (provide download-qr)
 
 (provide ++)
-(provide INSTRUCTOR_TERM)
+(provide INSTRUCTOR_TERM
+         FOLDER_ICON)
 
 (provide super-flatten)
 (provide is-reminder?)
@@ -57,6 +58,9 @@
 (define ts-magic-loader-img
   (local-bitmap "tsMagicLoader.png"))
 
+(define save-my-work-image
+  (local-bitmap "SAVE_MY_WORK.png"))
+
 (define GALLIUM_ICON
  (scale (local-bitmap "galliumos.jpg") 0.2))
 
@@ -68,7 +72,8 @@
   (++ (string-replace (string-replace url ":" "_" #:all? true) "/" "_" #:all? true)
       ".png"))
 
-
+(define FOLDER_ICON
+  (local-bitmap "folder-icon.png"))
 
 (struct settings (bg avatar avatar-choice avatar-reminder))
 
@@ -135,10 +140,21 @@
   
   (apply hb-append (map maybe-convert-string things)))
 
+(define/contract (logo-for s)
+  (-> string? pict?)
+  (scale-to-fit
+   (match (string-downcase s)
+     ["piskel"   (bitmap (build-path images "piskel.png"))]
+     ["drracket" (bitmap (build-path images "drracket.png"))]
+     ["chrome"   (bitmap (build-path images "chrome.png"))]
+     [else (ghost (rectangle 0 0))])
+   40 40 #:mode 'preserve))
 
 (define (string->open-pict s)
-  (open-arrow 70 GALLIUM_ICON
-                  (t s)))
+  (hc-append 5
+   (t "Open ")
+   (t s)
+   (logo-for s)))
 
 (define (instruction-open->pict i)
   (string->open-pict (instruction-open-program i)))
@@ -238,7 +254,9 @@
 
 (define (instruction->pict i)
   (item #:width 600
-        #:bullet (if (instruction-basic? i) bullet (blank 0))
+        #:bullet (if (or
+                      (instruction-basic? i)
+                      (instruction-open? i)) bullet (blank 0))
         (cond [(instruction-subtitle? i)    (blank 0)] ;These don't render in the normal place
               [(instruction-goal? i)        (blank 0)] ;Nor do these
               [(instruction-goal-side? i)   (instruction-goal-side->pict i)]

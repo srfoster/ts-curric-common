@@ -8,10 +8,11 @@
 (provide choose)
 (provide settings)
 (provide pad)
+(provide logo-for)
 
 (provide instruction-open)
 (provide instruction-open-file)
-(provide instruction-basic)
+(provide (rename-out [make-instruction-basic instruction-basic]))
 (provide instruction-goal)
 (provide instruction-goal-side)
 (provide instruction-folder)
@@ -98,6 +99,14 @@
 
 
 (struct instruction-basic (words) #:transparent)
+
+(define (make-instruction-basic words)
+
+  (instruction-basic (if (string? words)
+                         (add-period-if-necessary words)
+                         words)))
+
+
 (struct instruction-subtitle (words) #:transparent)
 (struct instruction-image (path width height label) #:transparent)
 (struct instruction-open (program) #:transparent)

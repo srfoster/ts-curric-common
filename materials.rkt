@@ -28,6 +28,7 @@
          define-racket-file
          define-launcher-list
          define-launcher-function
+         define-starter-code
 
          (struct-out defined-launcher-function)
          (struct-out defined-racket-file)
@@ -60,6 +61,7 @@
 (struct defined-launcher-function defined-launcher (f) #:transparent)
 
 (define launchable? defined-launcher?)
+
 
 
 ;Printing hints.  Or image differentiation...  Meta-data for materials...
@@ -291,24 +293,25 @@
     (findf
      (curryr string-prefix? "ts-curric-")
      (map ~a (explode-path (syntax-source stx)))))
+  
+  (datum->syntax stx
+   `(begin
+
+      (provide ,name)
+      (define ,name
+        (define-launcher-function-func
+          ',package-name
+          ',name
+          ,f)))))
+
+(define/contract (define-launcher-function-func package-name name f)
+  (-> string? symbol? procedure? defined-launcher-function?)
 
   (define short-package-name
     (string->symbol
      (string-replace package-name "ts-curric-" "")))
   
-  (datum->syntax stx
-   `(begin
-
-      (if (not (procedure? ,f))
-          (error (~a "Must give a function to define-launcher-function"))
-          (void))
-    
-      (provide ,name)
-      (define ,name
-        (defined-launcher-function
-          ',short-package-name
-          ',name
-          ,f)))))
+  (defined-launcher-function short-package-name name f))
 
 
 (define-syntax-rule (define-launcher-list name ls ...)
@@ -345,6 +348,13 @@
 
 (define-syntax-rule (define-racket-file name folder file-name)
   (begin
+    (provide name)
+    (define name (define-racket-file-func folder 'name file-name))))
+
+(define/contract (define-racket-file-func folder name  file-name)
+  (-> path? symbol? string? defined-racket-file?)
+  
+  (begin
     (define path  (build-path folder file-name))
 
     (if (not (file-exists? path))
@@ -353,12 +363,8 @@
 
     (define backwards-path-elems (reverse (explode-path path)))
     (define package-name (third backwards-path-elems))
-    
-    (provide name)
-    (define name (defined-racket-file
-                   package-name
-                   'name
-                   path))))
+
+    (defined-racket-file package-name name path)))
 
 
 
@@ -377,16 +383,20 @@
 
 ;Defines how a defined-launcher will display to a student...
 (define (student-display thing)
-  (cond [(image? thing)                  thing]
-        [(p:pict? thing)                 thing]
-        [(procedure? thing)              (thing)]
-        [(defined-image? thing)          (defined-image-image thing)]
-        [(defined-webpage? thing)        (send-url (defined-webpage-url thing))] 
-        [(defined-racket-file? thing)    (copy-paste-editor (defined-racket-file-path thing))]
-        [(defined-launcher-list? thing)  (apply values (map student-display (defined-launcher-list-launchers thing) ))]
-        [(defined-launcher-function? thing)  ((defined-launcher-function-f thing))]
-        [(list? thing)                   (map student-display thing)]
-        [else thing])  )
+  (define ret
+    (cond [(image? thing)                      thing]
+          [(p:pict? thing)                     thing]
+          [(procedure? thing)                  (thing)]
+          [(defined-image? thing)              (defined-image-image thing)]
+          [(defined-webpage? thing)            (send-url (defined-webpage-url thing))] 
+          [(defined-racket-file? thing)        (copy-paste-editor (defined-racket-file-path thing))]
+          [(defined-launcher-list? thing)      (apply values (map student-display (defined-launcher-list-launchers thing) ))]
+          [(defined-launcher-function? thing)  ((defined-launcher-function-f thing))]
+          [(list? thing)                       (map student-display thing)]
+          [else thing]))
+
+  (inset-frame #:color "red" #:amount 10 #:thickness 5
+               ret))
 
 
 (define (copy-paste-editor path)
@@ -492,8 +502,82 @@
                           (instruction-goal "the mystery success image"))
                          (scripts>launcher-img)))
 
-(module+ test
-  (how-to-use-launcher-card))
+
+
+(define (red-text s)
+  (p:colorize
+   (p:scale
+    (p:text s)
+    2)
+   "red"))
+
+(define (between-definitions-image)
+
+  (define paste-target (code-blank))
+  
+  (define code-img
+    (p:code (define (some-cool-thingy p)
+              ...)
+
+            #,paste-target
+
+            (define (some-other-cool-thingy)
+              ...)))
+
+  (p:vl-append 10
+               (red-text "Paste between any two definitions.")
+               (code+hints code-img
+                           (list paste-target (hint (p:text "For example, paste here"))))))
+
+
+(define-image-file between-definitions-explanation
+  images
+  (between-definitions-image))
+
+(define-image-file paste-the-code-below-into-your-file
+  images
+  (p:colorize
+   (p:scale
+    (p:text "Paste the code INSIDE the blue box below into your file and save.")
+    2)
+   "red"))
+
+(define-image-file paste-the-code-above-into-your-file
+  images
+  (p:vl-append 10
+               (red-text "Paste the code INSIDE the blue box above into your file and save.")))
+
+
+
+(define-syntax-rule (define-starter-code id dir file-name)
+  (begin
+    (define the-code
+      (define-racket-file-func
+        dir
+        'none
+        file-name))
+
+    (define the-launcher-function
+      (defined-launcher-function 'none 'none
+        (thunk
+         (define path (defined-racket-file-path the-code))
+         (define f (last (explode-path path)))
+
+         (define smw (build-path (find-system-path 'home-dir) "Desktop" "SAVE_MY_WORK"))
+    
+         (make-directory* smw)
+
+         (copy-file path (build-path smw f) #t)
+
+         (thread
+          (thunk (system (~a "drracket " (path->string (build-path smw f)))))))))
+
+    (define-launcher-list id
+      the-launcher-function
+      paste-the-code-below-into-your-file
+      the-code
+      (red-text "If the code doesn't automatically load,")
+      paste-the-code-above-into-your-file)))
 
 
 

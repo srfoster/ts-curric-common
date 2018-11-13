@@ -37,7 +37,9 @@
 (provide ts-magic-loader-img)
 
 (provide codify)
-(provide text-with-image)
+(provide text-with-image
+         how-to-use-launcher-card
+         analyze-activities)
 
 (require simple-qr)
 (require pict/shadow)
@@ -45,6 +47,26 @@
 (require pict/color)
 (require pict/code)
 (require racket/runtime-path)
+
+(require "./materials.rkt")
+
+(define (scripts>launcher-img)
+  (bitmap (build-path images "scripts-launch.png")))
+
+
+
+(define (how-to-use-launcher-card)
+  (activity-instructions "Launch Codes"
+                         '()
+                         (list                        
+                          (instruction-basic "Open the launcher")
+                          (instruction-basic "Fill in the blanks")
+                          (instruction-basic (launcher-img hello-world))
+                          (instruction-basic "Move your cursor to the end and press enter.")
+                          (instruction-goal "the mystery success image"))
+                         (scripts>launcher-img)))
+
+
 
 (current-font-size 40) 
 
@@ -397,6 +419,7 @@
   #;(displayln "qr-or-image")
   
   (cond [(pict? p) (pad p 20 cc-superimpose)]
+        [(rendered-launchable? p) (pad (rendered-launchable-image p) 20 cc-superimpose)]
         [(= 0 (string-length p)) (blank 0)]
         [(not (is-url? p)) (pad (bitmap p) 20 cc-superimpose)]
         [else (qr-or-path p)]))
@@ -579,6 +602,13 @@
     [(choose n wrappers)     (choice->pict sequence settings n wrappers)]
     [x                       (error "Something wasn't either a with-award or a choice")]))
 
+
+(define (wrapper-or-choice->activity wrapper)
+  (match wrapper
+    [(with-award n activity) (with-award-activity wrapper)]
+    [(choose n wrappers)     (map wrapper-or-choice->activity (choose-activities wrapper))]
+    [x                       x]))
+
 (define (super-flatten seq)
   (flatten
    (map (lambda (s)
@@ -610,4 +640,42 @@
             (make-list (length picts) quest)
             (make-list (length picts) color)
             )))
+
+
+
+
+
+;Utilities for curriculum develoment:
+
+;Do these need to go into half-sheets??
+(define (analyze-activities seq settings)
+
+  (define card-datas   (flatten
+                        (map wrapper-or-choice->activity
+                             (flatten seq))))
+
+  (define card-imgs   (flatten
+                       (map (curry wrapper-or-choice->pict seq settings)
+                            (flatten seq))))
+
+
+  (define thumbs (map (curryr scale 0.25) card-imgs))
+
+  (define launch-imgs (map display-launch-target card-datas))
+
+  (apply vl-append
+         (map (compose
+               frame
+               (curryr inset 10)
+               (curry apply (curry hc-append 10)))
+              (map list thumbs launch-imgs))))
+
+
+
+(define (display-launch-target card)
+  (define launcher (activity-instructions-video-url card))
+
+  (if (rendered-launchable? launcher)
+      (curriculum-developer-display (rendered-launchable-launchable launcher))
+      (colorize (text "No Launcher") "red")))
 

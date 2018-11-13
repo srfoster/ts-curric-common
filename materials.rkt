@@ -3,6 +3,7 @@
 (provide (struct-out material)
          disposable-material
          reusable-material
+         quest-card-material
 
          apply-duplication-policy
          make-duplication-policy
@@ -16,6 +17,7 @@
 
          launch
          student-display
+         curriculum-developer-display
          
          (struct-out defined-image)
          define-quests
@@ -30,13 +32,16 @@
          define-launcher-function
          define-starter-code
 
+         handle-cards
+
          (struct-out defined-launcher-function)
          (struct-out defined-racket-file)
 
-         how-to-use-launcher-card
+         (struct-out rendered-launchable)
+
          )
 
-(require "./half-sheets.rkt")
+(require lang-file/read-lang-file)
 (require ts-racket)
 (require net/sendurl)
 (require framework)
@@ -66,9 +71,10 @@
 
 ;Printing hints.  Or image differentiation...  Meta-data for materials...
 
-(define printed 'printed)
-(define disposable 'disposable)
-(define reusable 'reusable)
+(define printed     'printed)
+(define disposable  'disposable)
+(define reusable    'reusable)
+(define card        'card)
 
 (struct material (content types) #:transparent)
 
@@ -87,6 +93,12 @@
   (material content
             (list printed
                   reusable)))
+
+(define (quest-card-material content)
+  (material content
+            (list printed
+                  reusable
+                  card)))
 
 
 (define (material:student m s)
@@ -170,18 +182,20 @@
 
 
 (define (quest-card? c)
+  ;Make this look at the material type ('card), not the size...
+  ;  Then do what?  Scale it where?
   (define i (if (material? c) (material-content c) c))
   
-  (and (p:pict? i)
-       (> 600 (p:pict-width i))))
+  (or (and (p:pict? i)
+           (> 600 (p:pict-width i)))
+      (member card (material-types c))))
 
 
-
-(define (handle-card c)
+(define (display-quest-card c)
   (define i (if (material? c) (material-content c) c))
   
   (p:frame #:line-width 2
-           (p:inset i 20)))
+           (p:inset (p:scale-to-fit i 500 350 #:mode 'preserve) 20)))
 
 
 (define (handle-cards materials)
@@ -191,7 +205,7 @@
 
   (append (if (empty? cards)
               '()
-              (cards->pages (map handle-card cards)))
+              (cards->pages (map display-quest-card cards)))
           not-cards))
 
 (define-syntax-rule (duplication-system print-quest quests-expr policy)
@@ -254,14 +268,18 @@
 
 
 
-
+(struct rendered-launchable (launchable image))
 (define/contract (launcher-img thing)
   (-> launchable?
-      p:pict?)
+      rendered-launchable?)
 
-  (p:vc-append
-   (p:scale (p:text "Use Scripts > launch") 2)
-   (launcher-img-defined-launcher thing)))
+  (rendered-launchable
+   thing
+   (p:vc-append
+    (p:scale (p:text "Use Scripts > launch") 2)
+    (launcher-img-defined-launcher thing)))
+
+  )
 
 
 (define (launcher-img-defined-launcher thing)
@@ -398,6 +416,24 @@
   (inset-frame #:color "red" #:amount 10 #:thickness 5
                ret))
 
+(define/contract (curriculum-developer-display thing)
+  (-> any/c (or/c image? p:pict?))
+  
+  (define ret
+    (cond [(image? thing)                      thing]
+          [(p:pict? thing)                     thing]
+          [(procedure? thing)                  (p:text "procedure")]
+          [(defined-image? thing)              (defined-image-image thing)]
+          [(defined-webpage? thing)            (p:text (~a "Open: " (defined-webpage-url thing)))] 
+          [(defined-racket-file? thing)        (p:typeset-code (read-lang-file (defined-racket-file-path thing)))]
+          [(defined-launcher-list? thing)      (apply p:vl-append (map curriculum-developer-display (defined-launcher-list-launchers thing) ))]
+          [(defined-launcher-function? thing)  (text "procedure")]
+          [(list? thing)                       (apply p:vl-append  (map curriculum-developer-display thing))]
+          [else thing]))
+
+  ret
+  )
+
 
 (define (copy-paste-editor path)
   (define my-racket:text%
@@ -473,9 +509,6 @@
 (require racket/runtime-path)
 (define-runtime-path images "images")
 
-(define (scripts>launcher-img)
-  (p:bitmap (build-path images "scripts-launch.png")))
-
 
 
 (define-launcher-function hello-world  
@@ -490,17 +523,6 @@
                   (p:scale (p:text "(HINT: For a surprise, try running the launch code again.)") 2))
      (/ (- (random) 0.5) 2)
      )))
-
-(define (how-to-use-launcher-card)
-  (activity-instructions "Launch Codes"
-                         '()
-                         (list                        
-                          (instruction-basic "Open the launcher")
-                          (instruction-basic "Fill in the blanks")
-                          (instruction-basic (launcher-img hello-world))
-                          (instruction-basic "Move your cursor to the end and press enter.")
-                          (instruction-goal "the mystery success image"))
-                         (scripts>launcher-img)))
 
 
 
@@ -578,8 +600,6 @@
       the-code
       (red-text "If the code doesn't automatically load,")
       paste-the-code-above-into-your-file)))
-
-
 
 
 

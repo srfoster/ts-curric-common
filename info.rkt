@@ -4,4 +4,6 @@
                "https://github.com/thoughtstem/magic-loader.git"
                "https://github.com/thoughtstem/ts-racket.git"
                "rosette"
-               "quickscript"))
+               "quickscript"
+               "lang-file"
+               ))

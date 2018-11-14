@@ -414,15 +414,15 @@
           [(defined-image? thing)              (defined-image-image thing)]
           [(defined-webpage? thing)            (send-url (defined-webpage-url thing))] 
           [(defined-racket-file? thing)        (copy-paste-editor (defined-racket-file-path thing))]
-          [(defined-launcher-list? thing)      (apply values (map student-display (defined-launcher-list-launchers thing) ))]
+          [(defined-launcher-list? thing)      (map student-display
+                                                    (defined-launcher-list-launchers thing) )]
           [(defined-launcher-function? thing)  ((defined-launcher-function-f thing))]
           [(list? thing)                       (map student-display thing)]
           [else thing]))
 
-  (if (p:pict? ret)
-      (inset-frame #:color "red" #:amount 10 #:thickness 5
-                   ret)
-      ret))
+  (cond [ (p:pict? ret) (inset-frame #:color "red" #:amount 10 #:thickness 5 ret)]
+        [ (list? ret)   (apply values ret)]
+        [else ret]))
 
 (define/contract (curriculum-developer-display thing)
   (-> any/c (or/c image? p:pict?))

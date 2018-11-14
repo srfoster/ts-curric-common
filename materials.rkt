@@ -36,7 +36,7 @@
 
          (struct-out defined-launcher-function)
          (struct-out defined-racket-file)
-
+         (struct-out defined-launcher-list)
          (struct-out rendered-launchable)
 
          )
@@ -332,19 +332,25 @@
   (defined-launcher-function short-package-name name f))
 
 
-(define-syntax-rule (define-launcher-list name ls ...)
-  (begin
 
-    #;(if (not ((listof launchable?) (list ls ...)))
-        (error (~a "All must be launchables in define-launcher-list"))
-        (void))
-    
-    (provide name)
-    (define name
-      (defined-launcher-list
-        (defined-launcher-package-name (first (list ls ...)))
-        'name
-        (list ls ...)))))
+(define-syntax (define-launcher-list stx)
+  (define d (syntax->datum stx))
+  (define name (second d))
+  (define ls    (drop d 2))
+
+  (define package-name
+    (findf
+     (curryr string-prefix? "ts-curric-")
+     (map ~a (explode-path (syntax-source stx)))))
+  
+  (datum->syntax stx
+                 `(begin
+                    (provide ,name)
+                    (define ,name
+                      (defined-launcher-list
+                        ',package-name
+                        ',name
+                        (list ,@ls))))))
 
 
 

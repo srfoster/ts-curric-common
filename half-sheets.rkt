@@ -663,12 +663,15 @@
 
   (define launch-imgs (map display-launch-target card-datas))
 
-  (apply vl-append
-         (map (compose
-               frame
-               (curryr inset 10)
-               (curry apply (curry hc-append 10)))
-              (map list thumbs launch-imgs))))
+  (define ret
+    (apply vl-append
+           (map (compose
+                 frame
+                 (curryr inset 10)
+                 (curry apply (curry hc-append 10)))
+                (map list thumbs launch-imgs))))
+  (pict->bitmap ret)
+  )
 
 
 

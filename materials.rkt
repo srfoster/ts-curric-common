@@ -427,7 +427,7 @@
           [(defined-webpage? thing)            (p:text (~a "Open: " (defined-webpage-url thing)))] 
           [(defined-racket-file? thing)        (p:typeset-code (read-lang-file (defined-racket-file-path thing)))]
           [(defined-launcher-list? thing)      (apply p:vl-append (map curriculum-developer-display (defined-launcher-list-launchers thing) ))]
-          [(defined-launcher-function? thing)  (text "procedure")]
+          [(defined-launcher-function? thing)  (p:text "procedure")]
           [(list? thing)                       (apply p:vl-append  (map curriculum-developer-display thing))]
           [else thing]))
 

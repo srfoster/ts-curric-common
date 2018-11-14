@@ -61,7 +61,7 @@
                          (list                        
                           (instruction-basic "Open the launcher")
                           (instruction-basic "Fill in the blanks")
-                          (instruction-basic (launcher-img hello-world))
+                          (instruction-basic (rendered-launchable-image (launcher-img hello-world)))
                           (instruction-basic "Move your cursor to the end and press enter.")
                           (instruction-goal "the mystery success image"))
                          (scripts>launcher-img)))

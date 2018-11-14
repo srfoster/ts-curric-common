@@ -1,0 +1,82 @@
+#lang racket
+
+(require lang-file/read-lang-file)
+(require syntax/parse)
+(require pict)
+(require pict/code)
+(require (for-syntax racket))
+
+
+(define-syntax (make-def-lookup stx)
+
+  (define thing (second (syntax->datum stx)))
+
+  (define thing-def (string->symbol (~a thing "-def")))
+
+  (datum->syntax stx
+   `(define-syntax-class ,thing-def
+      (pattern ((~datum define) (~literal ,thing) body:expr))
+      (pattern ((~datum define) ((~literal ,thing) ps ...) body:expr)))))
+
+(define-syntax (extract-definition-from-file stx)
+  (define file-name (second (syntax->datum stx)))
+  (define thing (third (syntax->datum stx)))
+
+  (datum->syntax stx
+                 `(let ([ s (rest
+                             (syntax-e
+                              (fourth
+                               (syntax-e
+                                (read-lang-file ,file-name)))))])
+
+                    (make-def-lookup ,thing)
+
+                    (syntax-parse s
+                      [(any1 ... ,(string->symbol (~a "thing:" thing "-def")) any2 ...)
+                       #'thing]
+                      [else #f]))))
+
+(define (transform #:do (do identity)
+                   #:if (rule (thunk* #f))
+                   stx)
+  (define parts (syntax-e stx))
+
+  (define recursive-call
+    (λ(s)
+      (transform #:do do #:if rule s)))
+
+  (if (list? parts)
+      (datum->syntax stx
+                     (map recursive-call parts)
+                     stx)
+      (datum->syntax stx
+                     (if (or (eq? rule parts)
+                             (and (procedure? rule)
+                                  (rule parts)))
+                         (do parts)
+                         parts)
+                     stx)))
+
+
+
+
+(require (prefix-in h: 2htdp/image))
+
+(module+ test
+  (define ret (extract-definition-from-file (build-path "tsgd_runner_1.rkt")
+                                            player-sprite))
+  
+  (typeset-code ret)
+
+  (typeset-code (datum->syntax ret (syntax-e ret) ret))
+
+  (typeset-code (datum->syntax ret (list (circle 50)
+                                         ret)
+                               ret))
+
+  (typeset-code (transform ret
+                           #:do (compose code-align h:frame) 
+                           #:if h:image?)))
+
+
+

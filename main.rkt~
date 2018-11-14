@@ -6,7 +6,6 @@
  (all-from-out "k-2-sheet-helpers.rkt")
  (all-from-out "materials.rkt")
  (all-from-out "fleet-winter-2017.rkt")
- (all-from-out "file-code-extraction.rkt")
 
  #%module-begin)
 
@@ -15,7 +14,6 @@
 (require "k-2-sheet-helpers.rkt")
 (require "materials.rkt")
 (require "fleet-winter-2017.rkt")
-(require "file-code-extraction.rkt")
 
 
 ;We do some one-time setup by

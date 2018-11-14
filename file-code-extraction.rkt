@@ -4,14 +4,17 @@
          extract-from-file
          read-lang-file
          define-syntax-class
-         find-target
-         #;(except-out (all-from-out syntax/parse) id))
+         typeset-with-targets
+         delete-this
+         change-this
+         note-this)
 
 (require lang-file/read-lang-file)
 (require syntax/parse)
 (require pict)
 (require pict/code)
 (require (for-syntax racket))
+(require (only-in ts-racket x-out))
 
 (define-syntax (extract-from-file stx)
   (define file-name (second (syntax->datum stx)))
@@ -56,45 +59,98 @@
                              parts)
                          stx))))
 
+;Rename this:
+;  Takes a syntax tree and a list of (if,then pairs)
+;  Returns a single main image and a list of sub images
+;  Suitable for code+hints...
+(define (typeset-with-targets stx . if-thens)
 
-(define (find-target ret f (do identity))
-  (define hint-target #f)
+  (define hint-targets '())
+
+  (define main-syntax
+    (foldl (λ(next acc)
+             (define f  (first next))
+             (define do (second next))
+             (transform-code acc
+                             #:do (lambda(x)
+                                       
+                                    (define ret (do x))
+
+                                    (set! hint-targets (cons ret hint-targets))
+                                       
+                                    ret)
+                             #:if f))
+
+           stx
+           if-thens))
+  
   
   (define main
-    (typeset-code (transform-code ret
-                                    #:do (lambda(x)
-                                       
-                                           (define ret (do x))
+    (typeset-code main-syntax))
 
-                                           (set! hint-target ret)
-                                       
-                                           ret)
-                                    #:if f)))
-
-  (values hint-target
-          main))
+  (values main
+          hint-targets))
 
 
+(require (prefix-in h: 2htdp/image))
 
-;Test doesn't work, need different test file for this dir
-#;(module+ test
-    (require (prefix-in h: 2htdp/image))
+(define (fix-datum maybe-i)
+  (cond [(h:image? maybe-i) (bitmap maybe-i)]
+        [(pict? maybe-i)    maybe-i]
+        [else               (typeset-code (datum->syntax #f maybe-i))]))
 
-    (define-syntax-class player-sprite-def
-      (pattern ((~datum define) (~datum player-sprite) expr)))
+(define (delete-this i)
+  (code-align
+   (x-out
+    (frame #:color "red"
+           (inset (fix-datum i) 10)))))
 
-    (define-syntax-class WIDTH-def
-      (pattern ((~datum define) (~datum WIDTH) expr)))
+(define (change-this i)
+  (code-align
+   (frame #:color "red"
+          (inset (fix-datum i) 10))))
 
+(define (note-this i)
+  (code-align
+   (inset (fix-datum i) 10)))
+
+(define (replace-with stx)
+  (lambda (i)
+    (change-this
+     (if (syntax? stx)
+         (typeset-code stx)
+         stx))))
+
+
+
+(module+ test
+  (define-syntax-class start-game-call
+    (pattern ((~datum start-game) first:expr expr ... last:expr)))
   
-    (define ret (extract-from-file (build-path "tsgd_runner_1.rkt")
-                                   player-sprite-def))
+  (define ret
+    (extract-from-file (build-path "/Users/thoughtstem/Dev/Curriculum/ts-curric-game-engine/starter-files" "tsgd_runner_1.rkt")
+                       start-game-call))
 
-    (define ret2 (extract-from-file (build-path "tsgd_runner_1.rkt")
-                                    WIDTH-def))
+  (define new-ret
+    (syntax-case ret (start-game)
+      [(start-game first rest ... last)
+       #`(start-game first
+                     #,(datum->syntax #f 'SNIPE #'last)
+                     rest
+                     ...
+                     last)]))
 
-    (typeset-code (transform-code ret
-                                  #:do (compose code-align h:frame) 
-                                  #:if h:image?)))
 
+  (define-values (main hint-targets)
+    (typeset-with-targets new-ret
+                          (list 'SNIPE #;delete-this (replace-with (random-dude)))))
+
+  (typeset-code ret)
+  (typeset-code new-ret)
+
+  (require (only-in ts-racket code+hints hint random-dude))
+  (code+hints main
+              (list (first hint-targets) (hint "Replace this.  Customize the values...")))
+
+  )
 

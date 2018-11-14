@@ -419,8 +419,10 @@
           [(list? thing)                       (map student-display thing)]
           [else thing]))
 
-  (inset-frame #:color "red" #:amount 10 #:thickness 5
-               ret))
+  (if (p:pict? ret)
+      (inset-frame #:color "red" #:amount 10 #:thickness 5
+                   ret)
+      ret))
 
 (define/contract (curriculum-developer-display thing)
   (-> any/c (or/c image? p:pict?))

@@ -114,6 +114,13 @@
   (code-align
    (inset (fix-datum i) 10)))
 
+(define (replace-with stx)
+  (lambda (i)
+    (change-this
+     (if (syntax? stx)
+         (typeset-code stx)
+         stx))))
+
 
 
 (module+ test
@@ -136,12 +143,12 @@
 
   (define-values (main hint-targets)
     (typeset-with-targets new-ret
-                          (list 'SNIPE delete-this #;(replace-with #'YOU-BEEN-SNIPED!))))
+                          (list 'SNIPE #;delete-this (replace-with (random-dude)))))
 
   (typeset-code ret)
   (typeset-code new-ret)
 
-  (require (only-in ts-racket code+hints hint))
+  (require (only-in ts-racket code+hints hint random-dude))
   (code+hints main
               (list (first hint-targets) (hint "Replace this.  Customize the values...")))
 

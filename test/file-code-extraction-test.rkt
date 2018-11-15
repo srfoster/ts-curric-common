@@ -1,0 +1,92 @@
+#lang racket
+
+
+(require "../main.rkt")
+
+(require syntax/parse
+         racket/runtime-path
+         (prefix-in h: 2htdp/image))
+
+(define-runtime-path starter-files "starter-files")
+
+;Define a syntax class for what you're looking for in the file
+(define-syntax-class player-sprite-def
+  (pattern ((~datum define) (~datum player-sprite) expr)))
+
+;Use that syntax class to find what you're looking for in some file
+;  This will be your main code image
+(define ret
+  (extract-from-file (build-path starter-files "tsgd_runner_1.rkt")
+                     player-sprite-def))
+
+;Now typeset the main code image, while also finding image targets...
+(define-values (main hint-targets)
+  (typeset-with-targets ret
+                        (list 3        change-this)
+                        (list h:image? delete-this)))
+
+;Produce a final code+hints image
+(code+hints main
+            (list (first  hint-targets) (hint "Replace this"))
+            (list (second hint-targets) (hint "And replace this")))
+
+
+
+  
+;Define a syntax class for what you're looking for in the file
+(define-syntax-class start-game-call
+  (pattern ((~datum start-game) first:expr expr ... last:expr)))
+
+(define-syntax-class item-entity-call
+  (pattern ((~datum item-entity) expr ...)))
+
+;Use that syntax class to find what you're looking for in some file
+;  This will be your main code image
+(define ret2
+  (extract-from-file (build-path starter-files "tsgd_runner_1.rkt")
+                     start-game-call))
+
+
+;Now typeset the main code image, while also finding image targets...
+(define-values (main2 hint-targets2)
+  (typeset-with-targets ret2
+                        ;Okay, we can ref by exact name.
+                        ;TODO: Would be nice to ref by the syntax class pattern matcher...
+                        ;TODO: Also nice: refer to an entire expression, not just datum
+                        ;Probably need to use syntax patterns here instead of datums...
+                        (list 'bg-entity        delete-this)))
+
+
+;Produce a final code+hints image
+(code+hints main2
+            (list (first  hint-targets2) (hint "Delete the bg")))
+
+
+
+
+
+;Example where we add something after something else
+;   The trick?  Get the existing syntax.  Transform part of it to introduce a snipe target
+;   Then snipe out the target with the new code
+
+
+(define new-ret
+  (syntax-case ret2 (start-game)
+    [(start-game first rest ... last)
+     #`(start-game first
+                   #,(datum->syntax #f 'SNIPE #'last)
+                   rest
+                   ...
+                   last)]))
+
+
+(define-values (main3 hint-targets3)
+  (typeset-with-targets new-ret
+                        (list 'SNIPE
+                              (replace-with (random-dude)))))
+
+(require (only-in ts-racket code+hints hint random-dude))
+(code+hints main3
+            (list (first hint-targets3) (hint "Replace this.  Customize the values...")))
+  
+

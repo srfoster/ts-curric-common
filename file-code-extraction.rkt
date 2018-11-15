@@ -7,7 +7,8 @@
          typeset-with-targets
          delete-this
          change-this
-         note-this)
+         note-this
+         replace-with)
 
 (require lang-file/read-lang-file)
 (require syntax/parse)
@@ -121,36 +122,4 @@
          (typeset-code stx)
          stx))))
 
-
-
-(module+ test
-  (define-syntax-class start-game-call
-    (pattern ((~datum start-game) first:expr expr ... last:expr)))
-  
-  (define ret
-    (extract-from-file (build-path "/Users/thoughtstem/Dev/Curriculum/ts-curric-game-engine/starter-files" "tsgd_runner_1.rkt")
-                       start-game-call))
-
-  (define new-ret
-    (syntax-case ret (start-game)
-      [(start-game first rest ... last)
-       #`(start-game first
-                     #,(datum->syntax #f 'SNIPE #'last)
-                     rest
-                     ...
-                     last)]))
-
-
-  (define-values (main hint-targets)
-    (typeset-with-targets new-ret
-                          (list 'SNIPE #;delete-this (replace-with (random-dude)))))
-
-  (typeset-code ret)
-  (typeset-code new-ret)
-
-  (require (only-in ts-racket code+hints hint random-dude))
-  (code+hints main
-              (list (first hint-targets) (hint "Replace this.  Customize the values...")))
-
-  )
 

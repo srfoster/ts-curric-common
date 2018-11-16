@@ -35,6 +35,8 @@
          handle-cards
 
          (struct-out defined-launcher-function)
+         define-launcher-function-func
+         
          (struct-out defined-racket-file)
          (struct-out defined-launcher-list)
          (struct-out rendered-launchable)

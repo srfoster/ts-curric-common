@@ -103,3 +103,4 @@
 
 (check-equal? (pict? (test3)) #t)
 
+

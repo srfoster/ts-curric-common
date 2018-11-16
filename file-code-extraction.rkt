@@ -104,16 +104,16 @@
   (code-align
    (x-out
     (frame #:color "red"
-           (inset (fix-datum i) 10)))))
+           (inset (fix-datum i) 0)))))
 
 (define (change-this i)
   (code-align
    (frame #:color "red"
-          (inset (fix-datum i) 10))))
+          (inset (fix-datum i) 0))))
 
 (define (note-this i)
   (code-align
-   (inset (fix-datum i) 10)))
+   (inset (fix-datum i) 0)))
 
 (define (replace-with stx)
   (lambda (i)
@@ -121,5 +121,7 @@
      (if (syntax? stx)
          (typeset-code stx)
          stx))))
+
+
 
 

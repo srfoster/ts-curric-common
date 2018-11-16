@@ -8,7 +8,8 @@
          delete-this
          change-this
          note-this
-         replace-with)
+         replace-with
+         wrap-with)
 
 (require lang-file/read-lang-file)
 (require syntax/parse)
@@ -121,6 +122,27 @@
      (if (syntax? stx)
          (typeset-code stx)
          stx))))
+
+
+(define (shrink-if-too-big i)
+  (if (< 200 (pict-height i))
+      (scale-to-fit i 200 200)
+      i))
+
+(define (wrap-with code)
+  (lambda (i)
+
+    (define code-with-replacement
+      (list-set code
+                (index-of code 'REPLACE-HERE)
+                (code-align (shrink-if-too-big
+                             (bitmap i)))))
+
+    
+    (change-this
+     (typeset-code (datum->syntax #f code-with-replacement)))
+
+    ))
 
 
 

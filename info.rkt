@@ -7,3 +7,7 @@
                "quickscript"
                "lang-file"
                ))
+
+(define compile-omit-paths '(
+  "test/starter-files"))
+

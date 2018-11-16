@@ -432,12 +432,12 @@
   (define ret
     (cond [(image? thing)                      thing]
           [(p:pict? thing)                     thing]
-          [(procedure? thing)                  (p:text "procedure")]
+          [(procedure? thing)                  (thing)]
           [(defined-image? thing)              (defined-image-image thing)]
           [(defined-webpage? thing)            (p:text (~a "Open: " (defined-webpage-url thing)))] 
           [(defined-racket-file? thing)        (p:typeset-code (read-lang-file (defined-racket-file-path thing)))]
           [(defined-launcher-list? thing)      (apply p:vl-append (map curriculum-developer-display (defined-launcher-list-launchers thing) ))]
-          [(defined-launcher-function? thing)  (p:text "procedure")]
+          [(defined-launcher-function? thing)  ((defined-launcher-function-f thing))]
           [(list? thing)                       (apply p:vl-append  (map curriculum-developer-display thing))]
           [else thing]))
 

@@ -304,6 +304,7 @@
      "white")                 i))  )
 
 
+
 (define-syntax (define-launcher-function stx)
   (define d (syntax->datum stx))
   (define name (second d))
@@ -313,7 +314,7 @@
     (findf
      (curryr string-prefix? "ts-curric-")
      (map ~a (explode-path (syntax-source stx)))))
-  
+
   (datum->syntax stx
    `(begin
 

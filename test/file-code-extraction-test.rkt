@@ -13,10 +13,27 @@
 
 (define-runtime-path starter-files "starter-files")
 
+
+;A syntax class found in the file  "tsgd_runner_1.rkt"
+(define-syntax-class player-sprite-def #:datum-literals (define player-sprite sheet->sprite)
+  (pattern (define player-sprite
+             (sheet->sprite image:expr
+                            columns-kw:keyword columns:number))))
+
+
+(define-syntax-class enemy-entity-def #:datum-literals (enemy-entity sprite->entity sheet->sprite)
+  (pattern
+   (define (enemy-entity)
+     (sprite->entity (sheet->sprite image:expr
+                                    image-options ...)
+                     name-kw:keyword name
+                     position-kw:keyword position
+                     components:keyword first-component rest ...))))
+
+
+
 (define (test1)
-  ;Define a syntax class for what you're looking for in the file
-  (define-syntax-class player-sprite-def
-    (pattern ((~datum define) (~datum player-sprite) expr)))
+
 
   ;Use that syntax class to find what you're looking for in some file
   ;  This will be your main code image
@@ -102,5 +119,88 @@
   
 
 (check-equal? (pict? (test3)) #t)
+
+
+
+
+(define (test4)
+
+  ;Grab a snippet with an image in it
+  (define extracted-snippet
+    (extract-from-file (build-path starter-files "tsgd_runner_1.rkt")
+                       enemy-entity-def))
+
+  
+
+  ;Typeset the un-transformed snippet
+  (define-values (f hint-targets2)
+    (typeset-with-targets extracted-snippet))
+
+
+  ;Arbitrary transformation
+  (define extracted-snippet-transformed
+    (syntax-parse extracted-snippet
+      [p:enemy-entity-def
+       #`(define (player-entity)
+           (sprite->entity (sheet->sprite p.image
+                                          p.image-options ...)
+                           p.name-kw p.name
+                           p.position-kw p.position
+                           p.components p.first-component p.rest ...
+                           #,(datum->syntax #f 'SNIPE #'p.first-component)))]
+      [other (error "Error transforming snippet")]))
+
+
+  ;Typeset the transformed snippet
+  (define-values (s hint-targets1)
+    (typeset-with-targets extracted-snippet-transformed
+                          (list 'SNIPE
+                                (replace-with 'SNIPED))))
+
+
+
+  ;Make sure the embedded image stays...
+  (list f s))
+
+
+(let ([t (test4)])
+  (check-equal? (<= (pict-height (first t))
+                    (pict-height (second t)))
+                #t
+                "Embedded images should not get removed from typesetted snippets."))
+
+
+
+
+
+
+
+
+
+
+
+(define (test5)
+
+  ;Grab a snippet with an image in it
+  (define extracted-snippet
+    (extract-from-file (build-path starter-files "tsgd_enemy.rkt")
+                       enemy-entity-def))
+
+  
+  ;Typeset the transformed snippet
+  (define-values (main hint-targets)
+    (typeset-with-targets extracted-snippet))
+
+
+
+  ;Make sure the embedded image stays...
+  main)
+
+
+(check-equal? (pict? (test5)) #t)
+
+
+
+
 
 

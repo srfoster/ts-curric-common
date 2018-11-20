@@ -23,17 +23,28 @@
   (define thing (third (syntax->datum stx)))
 
   (datum->syntax stx
-                 `(let ([ s (rest
-                             (syntax-e
-                              (fourth
-                               (syntax-e
-                                (read-lang-file ,file-name)))))])
+                 `(let* ([full (read-lang-file ,file-name)]
+                         [full-e (syntax-e
+                                  full)]
+                         [ s (if (<= 4 (length full-e)) ;An admittedly crappy way of detecting if we're looking at a (module ...) structure or not...
+                                 (rest
+                                  (syntax-e
+                                   (fourth
+                                    full-e)))
+                                 full)])
 
                     
                     (syntax-parse s
+                      ;Find the snippet amidst a bunch of other things that might be in the file
                       [(any1 ... ,(string->symbol (~a "thing:" thing)) any2 ...)
                        #'thing]
-                      [else #f]))))
+
+                      ;If it's the only thing in the syntax, e.g. no #lang, just a raw definition
+                      [,(string->symbol (~a "thing:" thing))
+                       #'thing]
+
+                      
+                      [else (error (~a "Unable to extract snippet from " ,file-name))]))))
 
 
 (define (transform-code #:do (do identity)

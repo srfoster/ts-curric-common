@@ -4,4 +4,5 @@
 
 
 (require "./file-code-extraction-test.rkt")
+(require "./materials-test.rkt")
 

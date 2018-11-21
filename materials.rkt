@@ -183,14 +183,21 @@
    (summarize materials duplicated-materials)))
 
 
-(define (quest-card? c)
+(define/contract (quest-card? c)
+  (-> (or/c material? p:pict?)
+      (or/c #f any/c))
+
+  
   ;Make this look at the material type ('card), not the size...
   ;  Then do what?  Scale it where?
-  (define i (if (material? c) (material-content c) c))
+  (define i (if (material? c)
+                (material-content c)
+                c))
   
   (or (and (p:pict? i)
            (> 600 (p:pict-width i)))
-      (member card (material-types c))))
+      (and (material? c)
+           (member card (material-types c)))))
 
 
 (define (display-quest-card c)
@@ -200,14 +207,16 @@
            (p:inset (p:scale-to-fit i 500 350 #:mode 'preserve) 20)))
 
 
-(define (handle-cards materials)
+(define/contract (handle-cards materials)
+  (-> (listof (or/c material? p:pict?))
+      (listof (or/c material? p:pict?)))
   
   (define cards     (filter quest-card? materials))
   (define not-cards (filter (not/c quest-card?) materials))
 
   (append (if (empty? cards)
               '()
-              (cards->pages (map display-quest-card cards)))
+              (map p:bitmap (cards->pages (map display-quest-card cards))))
           not-cards))
 
 (define-syntax-rule (duplication-system print-quest quests-expr policy)
@@ -304,6 +313,7 @@
      "white")                 i))  )
 
 
+
 (define-syntax (define-launcher-function stx)
   (define d (syntax->datum stx))
   (define name (second d))
@@ -313,7 +323,7 @@
     (findf
      (curryr string-prefix? "ts-curric-")
      (map ~a (explode-path (syntax-source stx)))))
-  
+
   (datum->syntax stx
    `(begin
 

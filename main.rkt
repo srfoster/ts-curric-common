@@ -1,6 +1,7 @@
 #lang racket
 
 (provide
+ (all-from-out "quest-lang.rkt")
  (all-from-out "half-sheets.rkt")
  (all-from-out "k-2-sheets.rkt")
  (all-from-out "k-2-sheet-helpers.rkt")
@@ -10,6 +11,7 @@
 
  #%module-begin)
 
+(require "quest-lang.rkt")
 (require "half-sheets.rkt")
 (require "k-2-sheets.rkt")
 (require "k-2-sheet-helpers.rkt")

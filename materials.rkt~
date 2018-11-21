@@ -3,6 +3,7 @@
 (provide (struct-out material)
          disposable-material
          reusable-material
+         quest-card-material
 
          apply-duplication-policy
          make-duplication-policy
@@ -16,6 +17,7 @@
 
          launch
          student-display
+         curriculum-developer-display
          
          (struct-out defined-image)
          define-quests
@@ -28,14 +30,20 @@
          define-racket-file
          define-launcher-list
          define-launcher-function
+         define-starter-code
+
+         handle-cards
 
          (struct-out defined-launcher-function)
+         define-launcher-function-func
+         
          (struct-out defined-racket-file)
+         (struct-out defined-launcher-list)
+         (struct-out rendered-launchable)
 
-         how-to-use-launcher-card
          )
 
-(require "./half-sheets.rkt")
+(require lang-file/read-lang-file)
 (require ts-racket)
 (require net/sendurl)
 (require framework)
@@ -62,11 +70,13 @@
 (define launchable? defined-launcher?)
 
 
+
 ;Printing hints.  Or image differentiation...  Meta-data for materials...
 
-(define printed 'printed)
-(define disposable 'disposable)
-(define reusable 'reusable)
+(define printed     'printed)
+(define disposable  'disposable)
+(define reusable    'reusable)
+(define card        'card)
 
 (struct material (content types) #:transparent)
 
@@ -85,6 +95,12 @@
   (material content
             (list printed
                   reusable)))
+
+(define (quest-card-material content)
+  (material content
+            (list printed
+                  reusable
+                  card)))
 
 
 (define (material:student m s)
@@ -168,18 +184,20 @@
 
 
 (define (quest-card? c)
+  ;Make this look at the material type ('card), not the size...
+  ;  Then do what?  Scale it where?
   (define i (if (material? c) (material-content c) c))
   
-  (and (p:pict? i)
-       (> 600 (p:pict-width i))))
+  (or (and (p:pict? i)
+           (> 600 (p:pict-width i)))
+      (member card (material-types c))))
 
 
-
-(define (handle-card c)
+(define (display-quest-card c)
   (define i (if (material? c) (material-content c) c))
   
   (p:frame #:line-width 2
-           (p:inset i 20)))
+           (p:inset (p:scale-to-fit i 500 350 #:mode 'preserve) 20)))
 
 
 (define (handle-cards materials)
@@ -189,7 +207,7 @@
 
   (append (if (empty? cards)
               '()
-              (cards->pages (map handle-card cards)))
+              (cards->pages (map display-quest-card cards)))
           not-cards))
 
 (define-syntax-rule (duplication-system print-quest quests-expr policy)
@@ -252,14 +270,18 @@
 
 
 
-
+(struct rendered-launchable (launchable image))
 (define/contract (launcher-img thing)
   (-> launchable?
-      p:pict?)
+      rendered-launchable?)
 
-  (p:vc-append
-   (p:scale (p:text "Use Scripts > launch") 2)
-   (launcher-img-defined-launcher thing)))
+  (rendered-launchable
+   thing
+   (p:vc-append
+    (p:scale (p:text "Use Scripts > launch") 2)
+    (launcher-img-defined-launcher thing)))
+
+  )
 
 
 (define (launcher-img-defined-launcher thing)
@@ -282,6 +304,7 @@
      "white")                 i))  )
 
 
+
 (define-syntax (define-launcher-function stx)
   (define d (syntax->datum stx))
   (define name (second d))
@@ -292,38 +315,45 @@
      (curryr string-prefix? "ts-curric-")
      (map ~a (explode-path (syntax-source stx)))))
 
+  (datum->syntax stx
+   `(begin
+
+      (provide ,name)
+      (define ,name
+        (define-launcher-function-func
+          ',package-name
+          ',name
+          ,f)))))
+
+(define/contract (define-launcher-function-func package-name name f)
+  (-> string? symbol? procedure? defined-launcher-function?)
+
   (define short-package-name
     (string->symbol
      (string-replace package-name "ts-curric-" "")))
   
+  (defined-launcher-function short-package-name name f))
+
+
+
+(define-syntax (define-launcher-list stx)
+  (define d (syntax->datum stx))
+  (define name (second d))
+  (define ls    (drop d 2))
+
+  (define package-name
+    (findf
+     (curryr string-prefix? "ts-curric-")
+     (map ~a (explode-path (syntax-source stx)))))
+  
   (datum->syntax stx
-   `(begin
-
-      (if (not (procedure? ,f))
-          (error (~a "Must give a function to define-launcher-function"))
-          (void))
-    
-      (provide ,name)
-      (define ,name
-        (defined-launcher-function
-          ',short-package-name
-          ',name
-          ,f)))))
-
-
-(define-syntax-rule (define-launcher-list name ls ...)
-  (begin
-
-    #;(if (not ((listof launchable?) (list ls ...)))
-        (error (~a "All must be launchables in define-launcher-list"))
-        (void))
-    
-    (provide name)
-    (define name
-      (defined-launcher-list
-        (defined-launcher-package-name (first (list ls ...)))
-        'name
-        (list ls ...)))))
+                 `(begin
+                    (provide ,name)
+                    (define ,name
+                      (defined-launcher-list
+                        ',package-name
+                        ',name
+                        (list ,@ls))))))
 
 
 
@@ -345,6 +375,13 @@
 
 (define-syntax-rule (define-racket-file name folder file-name)
   (begin
+    (provide name)
+    (define name (define-racket-file-func folder 'name file-name))))
+
+(define/contract (define-racket-file-func folder name  file-name)
+  (-> path? symbol? string? defined-racket-file?)
+  
+  (begin
     (define path  (build-path folder file-name))
 
     (if (not (file-exists? path))
@@ -353,12 +390,8 @@
 
     (define backwards-path-elems (reverse (explode-path path)))
     (define package-name (third backwards-path-elems))
-    
-    (provide name)
-    (define name (defined-racket-file
-                   package-name
-                   'name
-                   path))))
+
+    (defined-racket-file package-name name path)))
 
 
 
@@ -377,16 +410,40 @@
 
 ;Defines how a defined-launcher will display to a student...
 (define (student-display thing)
-  (cond [(image? thing)                  thing]
-        [(p:pict? thing)                 thing]
-        [(procedure? thing)              (thing)]
-        [(defined-image? thing)          (defined-image-image thing)]
-        [(defined-webpage? thing)        (send-url (defined-webpage-url thing))] 
-        [(defined-racket-file? thing)    (copy-paste-editor (defined-racket-file-path thing))]
-        [(defined-launcher-list? thing)  (apply values (map student-display (defined-launcher-list-launchers thing) ))]
-        [(defined-launcher-function? thing)  ((defined-launcher-function-f thing))]
-        [(list? thing)                   (map student-display thing)]
-        [else thing])  )
+  (define ret
+    (cond [(image? thing)                      thing]
+          [(p:pict? thing)                     thing]
+          [(procedure? thing)                  (thing)]
+          [(defined-image? thing)              (defined-image-image thing)]
+          [(defined-webpage? thing)            (send-url (defined-webpage-url thing))] 
+          [(defined-racket-file? thing)        (copy-paste-editor (defined-racket-file-path thing))]
+          [(defined-launcher-list? thing)      (map student-display
+                                                    (defined-launcher-list-launchers thing) )]
+          [(defined-launcher-function? thing)  ((defined-launcher-function-f thing))]
+          [(list? thing)                       (map student-display thing)]
+          [else thing]))
+
+  (cond [ (p:pict? ret) (inset-frame #:color "red" #:amount 10 #:thickness 5 ret)]
+        [ (list? ret)   (apply values ret)]
+        [else ret]))
+
+(define/contract (curriculum-developer-display thing)
+  (-> any/c (or/c image? p:pict?))
+  
+  (define ret
+    (cond [(image? thing)                      thing]
+          [(p:pict? thing)                     thing]
+          [(procedure? thing)                  (thing)]
+          [(defined-image? thing)              (defined-image-image thing)]
+          [(defined-webpage? thing)            (p:text (~a "Open: " (defined-webpage-url thing)))] 
+          [(defined-racket-file? thing)        (p:typeset-code (read-lang-file (defined-racket-file-path thing)))]
+          [(defined-launcher-list? thing)      (apply p:vl-append (map curriculum-developer-display (defined-launcher-list-launchers thing) ))]
+          [(defined-launcher-function? thing)  ((defined-launcher-function-f thing))]
+          [(list? thing)                       (apply p:vl-append  (map curriculum-developer-display thing))]
+          [else thing]))
+
+  ret
+  )
 
 
 (define (copy-paste-editor path)
@@ -463,9 +520,6 @@
 (require racket/runtime-path)
 (define-runtime-path images "images")
 
-(define (scripts>launcher-img)
-  (p:bitmap (build-path images "scripts-launch.png")))
-
 
 
 (define-launcher-function hello-world  
@@ -481,21 +535,82 @@
      (/ (- (random) 0.5) 2)
      )))
 
-(define (how-to-use-launcher-card)
-  (activity-instructions "Launch Codes"
-                         '()
-                         (list                        
-                          (instruction-basic "Open the launcher")
-                          (instruction-basic "Fill in the blanks")
-                          (instruction-basic (launcher-img hello-world))
-                          (instruction-basic "Move your cursor to the end and press enter.")
-                          (instruction-goal "the mystery success image"))
-                         (scripts>launcher-img)))
-
-(module+ test
-  (how-to-use-launcher-card))
 
 
+(define (red-text s)
+  (p:colorize
+   (p:scale
+    (p:text s)
+    2)
+   "red"))
+
+(define (between-definitions-image)
+
+  (define paste-target (code-blank))
+  
+  (define code-img
+    (p:code (define (some-cool-thingy p)
+              ...)
+
+            #,paste-target
+
+            (define (some-other-cool-thingy)
+              ...)))
+
+  (p:vl-append 10
+               (red-text "Paste between any two definitions.")
+               (code+hints code-img
+                           (list paste-target (hint (p:text "For example, paste here"))))))
+
+
+(define-image-file between-definitions-explanation
+  images
+  (between-definitions-image))
+
+(define-image-file paste-the-code-below-into-your-file
+  images
+  (p:colorize
+   (p:scale
+    (p:text "Paste the code INSIDE the blue box below into your file and save.")
+    2)
+   "red"))
+
+(define-image-file paste-the-code-above-into-your-file
+  images
+  (p:vl-append 10
+               (red-text "Paste the code INSIDE the blue box above into your file and save.")))
+
+
+
+(define-syntax-rule (define-starter-code id dir file-name)
+  (begin
+    (define the-code
+      (define-racket-file-func
+        dir
+        'none
+        file-name))
+
+    (define the-launcher-function
+      (defined-launcher-function 'none 'none
+        (thunk
+         (define path (defined-racket-file-path the-code))
+         (define f (last (explode-path path)))
+
+         (define smw (build-path (find-system-path 'home-dir) "Desktop" "SAVE_MY_WORK"))
+    
+         (make-directory* smw)
+
+         (copy-file path (build-path smw f) #t)
+
+         (thread
+          (thunk (system (~a "drracket " (path->string (build-path smw f)))))))))
+
+    (define-launcher-list id
+      the-launcher-function
+      paste-the-code-below-into-your-file
+      the-code
+      (red-text "If the code doesn't automatically load,")
+      paste-the-code-above-into-your-file)))
 
 
 

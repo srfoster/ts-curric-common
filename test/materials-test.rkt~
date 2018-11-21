@@ -1,0 +1,12 @@
+#lang racket
+
+(require rackunit)
+
+(duplication-system printable-quest
+                    
+ (quests)
+
+ (make-duplication-policy
+  #:reusable   (material:student 1 1)
+  #:disposable (material:student 1 1)
+  #:raw-image  (material:student 1 1)))

@@ -10,8 +10,7 @@
    (colorize (rectangle 300 250) "green")
    (colorize (rectangle 300 250) "blue")
 
-   (colorize (rectangle 650 800) "gray")
-   ))
+   (colorize (rectangle 650 800) "gray")))
 
 (define (quest2)
   (list

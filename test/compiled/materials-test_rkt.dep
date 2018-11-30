@@ -1,0 +1,1 @@
+("7.0" ("6db2f361c112d2bd0d975483ec877cb0f7d5c0cb" . "70c9e55cd7cdefcd5c7cdb3f9f960db1e9bd1b90") (collects #"pict" #"main.rkt") (collects #"racket" #"main.rkt") (collects #"racket" #"runtime-config.rkt") (collects #"rackunit" #"main.rkt") (collects #"ts-curric-common" #"materials.rkt"))

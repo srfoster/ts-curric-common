@@ -6,7 +6,8 @@
          titled-image-panel
          solid
          titled-image
-         auto-layout )
+         auto-layout
+         panel?)
 
 (require (except-in 2htdp/image frame))
 (require lang/posn)

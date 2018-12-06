@@ -201,14 +201,17 @@
   (if (not i) (blank 0)
       (let ([title (bt (++ "Show " INSTRUCTOR_TERM "..."))])
         (shadow-frame
-         (colorize
+         (pad 
+          (colorize
            (vc-append 0
                       title
                       (para #:width (+ (pict-width title) 150)
                             #:align 'center
                             (++ "..." (add-period-if-necessary (lowercase-first-letter (fix-quotes (instruction-goal-words i)))))
                             ))
-           "black")))))
+           "black")
+          0
+          cc-superimpose)))))
 
 (define (instruction-goal-side->pict i)
   (if (not i) (blank 0)

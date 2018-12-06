@@ -6,8 +6,7 @@
          titled-image-panel
          solid
          titled-image
-         auto-layout
-         panel?)
+         auto-layout )
 
 (require (except-in 2htdp/image frame))
 (require lang/posn)
@@ -45,7 +44,7 @@
 (define cell-size 50)
 (define title-font-size 18)
 (define padding 20)
-(define page-width (* 18 cell-size))
+(define page-width (* 20 cell-size))
 (define PAGE-HEIGHT (* 25 cell-size))
 
 

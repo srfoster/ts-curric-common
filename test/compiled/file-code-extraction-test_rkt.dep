@@ -1,1 +1,5 @@
+<<<<<<< HEAD
 ("7.0" ("aeaf382116074310e36ae0203014a549d774c3df" . "fcb0cf423c346c3feb5071adc2fa00bba7b2c6c3") (collects #"2htdp" #"image.rkt") (collects #"pict" #"main.rkt") (collects #"racket" #"main.rkt") (collects #"racket" #"runtime-config.rkt") (collects #"racket" #"runtime-path.rkt") (collects #"rackunit" #"main.rkt") (collects #"syntax" #"parse.rkt") (collects #"ts-curric-common" #"main.rkt") (collects #"ts-racket" #"main.rkt"))
+=======
+("7.0" ("aeaf382116074310e36ae0203014a549d774c3df" . "e817e7159495a5c87055cdde48c5c6eda174d656") (collects #"2htdp" #"image.rkt") (collects #"pict" #"main.rkt") (collects #"racket" #"main.rkt") (collects #"racket" #"runtime-config.rkt") (collects #"racket" #"runtime-path.rkt") (collects #"rackunit" #"main.rkt") (collects #"syntax" #"parse.rkt") (collects #"ts-curric-common" #"main.rkt") (collects #"ts-racket" #"main.rkt"))
+>>>>>>> 80307106e6975b1526ade66b2b1eb04e6aa4434d
